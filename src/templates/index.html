@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Playlist Migration Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Music Playlist Migration Tool</h1>
+            <p>Easily migrate your playlists between Spotify and YouTube Music</p>
+        </header>
+
+        <main>
+            <!-- Authentication Status -->
+            <section class="auth-section">
+                <h2>Platform Authentication</h2>
+                <div class="auth-status">
+                    <div class="platform-status">
+                        <span class="platform-name">Spotify</span>
+                        <span id="spotify-status" class="status-indicator not-authenticated">Not Authenticated</span>
+                        <button id="spotify-auth-btn" class="auth-btn">Authenticate Spotify</button>
+                    </div>
+                    <div class="platform-status">
+                        <span class="platform-name">YouTube Music</span>
+                        <span id="youtube-status" class="status-indicator not-authenticated">Not Authenticated</span>
+                        <button id="youtube-auth-btn" class="auth-btn">Authenticate YouTube Music</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Playlist Selection -->
+            <section class="playlist-section">
+                <h2>Select Playlist</h2>
+                <div class="playlist-controls">
+                    <select id="platform-selector">
+                        <option value="">Select Platform</option>
+                        <option value="spotify">Spotify</option>
+                        <option value="youtube">YouTube Music</option>
+                    </select>
+                    <button id="load-playlists-btn" disabled>Load Playlists</button>
+                </div>
+                <div class="playlist-list">
+                    <ul id="playlists-container"></ul>
+                </div>
+            </section>
+
+            <!-- Migration Control -->
+            <section class="migration-section">
+                <h2>Migrate Playlist</h2>
+                <div class="migration-controls">
+                    <input type="text" id="playlist-id-input" placeholder="Enter playlist ID or select from above">
+                    <button id="migrate-btn" disabled>Start Migration</button>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div id="progress-text" class="progress-text">Ready</div>
+                </div>
+                <div id="result-container" class="result-container hidden">
+                    <h3>Migration Result</h3>
+                    <p id="result-text"></p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

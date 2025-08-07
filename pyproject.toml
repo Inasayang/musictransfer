@@ -1,0 +1,30 @@
+[project]
+name = "musictransfer"
+version = "1.0.0"
+description = "Spotify and YouTube Music Playlist Migration Tool"
+readme = "README.md"
+authors = [
+    {name = "Inasayang", email = "xiayangzzw@gmail.com"},
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.28.0",
+    "Flask>=3.1.1",
+    "python-dotenv>=1.1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/Inasayang/musictransfer"
+Repository = "https://github.com/Inasayang/musictransfer"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "pytest>=8.4.1",
+]
