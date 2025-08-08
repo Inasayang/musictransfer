@@ -10,3 +10,5 @@ key.txt
 .env
 *.log
 .venv
+bun.lock
+node_modules/
