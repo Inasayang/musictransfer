@@ -14,12 +14,14 @@ A powerful web-based tool for migrating music playlists between Spotify and YouT
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/Inasayang/musictransfer.git
 cd musictransfer
 ```
 
 2. Install dependencies using PDM:
+
 ```bash
 pdm install
 ```
@@ -27,6 +29,7 @@ pdm install
 ## Configuration
 
 1. Create a `.env` file in the project root:
+
 ```env
 # Spotify API Credentials
 SPOTIFY_CLIENT_ID=your_spotify_client_id

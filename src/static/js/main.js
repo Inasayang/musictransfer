@@ -20,13 +20,17 @@ function updateAuthStatus() {
             const spotifyBtn = document.getElementById('spotify-auth-btn');
             
             if (data.spotify) {
-                spotifyStatus.textContent = 'Authenticated';
-                spotifyStatus.className = 'status-indicator authenticated';
+                spotifyStatus.textContent = 'Connected';
+                spotifyStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400';
                 spotifyBtn.disabled = true;
+                // Update status indicator
+                spotifyStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-green-500';
             } else {
                 spotifyStatus.textContent = 'Not Authenticated';
-                spotifyStatus.className = 'status-indicator not-authenticated';
+                spotifyStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400';
                 spotifyBtn.disabled = false;
+                // Update status indicator
+                spotifyStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-red-500';
             }
             
             // Update YouTube status
@@ -34,13 +38,17 @@ function updateAuthStatus() {
             const youtubeBtn = document.getElementById('youtube-auth-btn');
             
             if (data.youtube) {
-                youtubeStatus.textContent = 'Authenticated';
-                youtubeStatus.className = 'status-indicator authenticated';
+                youtubeStatus.textContent = 'Connected';
+                youtubeStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400';
                 youtubeBtn.disabled = true;
+                // Update status indicator
+                youtubeStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-green-500';
             } else {
                 youtubeStatus.textContent = 'Not Authenticated';
-                youtubeStatus.className = 'status-indicator not-authenticated';
+                youtubeStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400';
                 youtubeBtn.disabled = false;
+                // Update status indicator
+                youtubeStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-red-500';
             }
             
             // Update migration button state
@@ -95,29 +103,48 @@ function bindEventListeners() {
 // Load playlists
 function loadPlaylists(platform) {
     const container = document.getElementById('playlists-container');
-    container.innerHTML = '<li>Loading...</li>';
+    container.innerHTML = '<li class="p-4 text-center text-vercel-gray-400">Loading...</li>';
     
     fetch(`/api/playlists?platform=${platform}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                container.innerHTML = `<li class="error">Failed to load: ${data.error}</li>`;
+                // Check if this is a YouTube authentication error
+                if (platform === 'youtube' && (data.error.includes('YouTube authentication has expired') || data.error.includes('Please re-authenticate with YouTube'))) {
+                    container.innerHTML = `<li class="p-4 text-center text-red-400">Failed to load: ${data.error}<br><button id="reauth-youtube-playlist-btn" class="mt-2 bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Re-authenticate with YouTube</button></li>`;
+                    
+                    // Add event listener to the re-authentication button
+                    setTimeout(() => {
+                        const reauthBtn = document.getElementById('reauth-youtube-playlist-btn');
+                        if (reauthBtn) {
+                            reauthBtn.addEventListener('click', function() {
+                                // Open YouTube authentication in a new window
+                                window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+                                
+                                // Update UI to show that re-authentication is in progress
+                                container.innerHTML = '<li class="p-4 text-center text-vercel-gray-400">Re-authentication in progress... Please complete the authentication in the popup window and try loading playlists again.</li>';
+                            });
+                        }
+                    }, 100);
+                } else {
+                    container.innerHTML = `<li class="p-4 text-center text-red-400">Failed to load: ${data.error}</li>`;
+                }
                 return;
             }
             
             if (data.length === 0) {
-                container.innerHTML = '<li>No playlists found</li>';
+                container.innerHTML = '<li class="p-4 text-center text-vercel-gray-400">No playlists found</li>';
                 return;
             }
             
             container.innerHTML = '';
             data.forEach(playlist => {
                 const li = document.createElement('li');
-                li.className = 'playlist-item';
+                li.className = 'p-4 hover:bg-vercel-gray-700 cursor-pointer transition duration-150 ease-in-out';
                 li.innerHTML = `
-                    <h3>${playlist.name}</h3>
-                    <p>${playlist.track_count} songs</p>
-                    <small>ID: ${playlist.id}</small>
+                    <h3 class="text-sm font-medium text-vercel-gray-100">${playlist.name}</h3>
+                    <p class="text-vercel-gray-400 text-xs mt-1">${playlist.track_count} songs</p>
+                    <small class="text-vercel-gray-500 text-xs truncate block mt-1">ID: ${playlist.id}</small>
                 `;
                 li.addEventListener('click', function() {
                     selectPlaylist(playlist.id);
@@ -126,7 +153,7 @@ function loadPlaylists(platform) {
             });
         })
         .catch(error => {
-            container.innerHTML = `<li class="error">Failed to load: ${error.message}</li>`;
+            container.innerHTML = `<li class="p-4 text-center text-red-400">Failed to load: ${error.message}</li>`;
         });
 }
 
@@ -137,10 +164,14 @@ function selectPlaylist(playlistId) {
     updateMigrateButtonState();
     
     // Highlight selected playlist item
-    document.querySelectorAll('.playlist-item').forEach(item => {
-        item.style.backgroundColor = '';
+    document.querySelectorAll('#playlists-container li').forEach(item => {
+        item.classList.remove('bg-vercel-gray-700', 'border-l-2', 'border-l-vercel-blue-500');
     });
-    event.currentTarget.style.backgroundColor = '#e3f2fd';
+    
+    // Add highlight to selected item (if event is available)
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('bg-vercel-gray-700', 'border-l-2', 'border-l-vercel-blue-500');
+    }
 }
 
 // Update migration button state
@@ -217,8 +248,47 @@ function pollMigrationStatus() {
 
 // Show error
 function showError(error) {
-    document.getElementById('progress-text').textContent = `Error: ${error}`;
-    document.getElementById('progress-fill').style.backgroundColor = '#dc3545';
+    const progressText = document.getElementById('progress-text');
+    progressText.textContent = `Error: ${error}`;
+    document.getElementById('progress-fill').classList.remove('bg-gradient-to-r', 'from-vercel-blue-500', 'to-vercel-purple-500');
+    document.getElementById('progress-fill').classList.add('bg-red-500');
+    
+    // Check if this is a YouTube authentication error and provide re-authentication option
+    if (error.includes('YouTube authentication has expired') || error.includes('Please re-authenticate with YouTube')) {
+        progressText.innerHTML += '<br><button id="reauth-youtube-btn" class="mt-2 bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Re-authenticate with YouTube</button>';
+        
+        // Add event listener to the re-authentication button
+        setTimeout(() => {
+            const reauthBtn = document.getElementById('reauth-youtube-btn');
+            if (reauthBtn) {
+                reauthBtn.addEventListener('click', function() {
+                    // Open YouTube authentication in a new window
+                    window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+                    
+                    // Update UI to show that re-authentication is in progress
+                    progressText.innerHTML = 'Re-authentication in progress... Please complete the authentication in the popup window.';
+                    
+                    // Periodically check if authentication is complete
+                    const authCheckInterval = setInterval(() => {
+                        fetch('/api/auth/status')
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.youtube) {
+                                    clearInterval(authCheckInterval);
+                                    progressText.textContent = 'YouTube re-authentication successful! You can now try the migration again.';
+                                    document.getElementById('progress-fill').classList.remove('bg-red-500');
+                                    document.getElementById('progress-fill').classList.add('bg-gradient-to-r', 'from-vercel-blue-500', 'to-vercel-purple-500');
+                                    updateAuthStatus(); // Update the UI to show connected status
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Failed to check authentication status:', err);
+                            });
+                    }, 2000); // Check every 2 seconds
+                });
+            }
+        }, 100);
+    }
 }
 
 // Show result
@@ -227,11 +297,15 @@ function showResult(playlistId) {
     const resultText = document.getElementById('result-text');
     
     resultText.innerHTML = `
-        Migration completed! YouTube Music playlist ID: <strong>${playlistId}</strong><br>
+        Migration completed! YouTube Music playlist ID: <strong class="text-vercel-gray-100">${playlistId}</strong><br>
         You can view the new playlist in YouTube Music.
     `;
     
     resultContainer.classList.remove('hidden');
+    
+    // Reset progress bar to original colors
+    document.getElementById('progress-fill').classList.remove('bg-red-500');
+    document.getElementById('progress-fill').classList.add('bg-gradient-to-r', 'from-vercel-blue-500', 'to-vercel-purple-500');
 }
 
 // Periodically update authentication status

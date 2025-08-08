@@ -1,74 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Playlist Migration Tool</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🎵 Music Playlist Migration Tool</h1>
-            <p>Easily migrate your playlists between Spotify and YouTube Music</p>
+<body class="bg-vercel-gray-900 text-vercel-gray-100 min-h-screen font-sans antialiased">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="border-b border-vercel-gray-800">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-r from-vercel-blue-500 to-vercel-purple-500"></div>
+                        <h1 class="text-xl font-bold">MusicTransfer</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="theme-toggle" class="p-2 rounded-lg hover:bg-vercel-gray-800 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </header>
 
-        <main>
-            <!-- Authentication Status -->
-            <section class="auth-section">
-                <h2>Platform Authentication</h2>
-                <div class="auth-status">
-                    <div class="platform-status">
-                        <span class="platform-name">Spotify</span>
-                        <span id="spotify-status" class="status-indicator not-authenticated">Not Authenticated</span>
-                        <button id="spotify-auth-btn" class="auth-btn">Authenticate Spotify</button>
-                    </div>
-                    <div class="platform-status">
-                        <span class="platform-name">YouTube Music</span>
-                        <span id="youtube-status" class="status-indicator not-authenticated">Not Authenticated</span>
-                        <button id="youtube-auth-btn" class="auth-btn">Authenticate YouTube Music</button>
-                    </div>
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto px-4 py-8">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-4">🎵 Music Playlist Migration</h1>
+                    <p class="text-lg text-vercel-gray-400 max-w-2xl mx-auto">Easily migrate your playlists between Spotify and YouTube Music with our fast and reliable tool.</p>
                 </div>
-            </section>
 
-            <!-- Playlist Selection -->
-            <section class="playlist-section">
-                <h2>Select Playlist</h2>
-                <div class="playlist-controls">
-                    <select id="platform-selector">
-                        <option value="">Select Platform</option>
-                        <option value="spotify">Spotify</option>
-                        <option value="youtube">YouTube Music</option>
-                    </select>
-                    <button id="load-playlists-btn" disabled>Load Playlists</button>
-                </div>
-                <div class="playlist-list">
-                    <ul id="playlists-container"></ul>
-                </div>
-            </section>
-
-            <!-- Migration Control -->
-            <section class="migration-section">
-                <h2>Migrate Playlist</h2>
-                <div class="migration-controls">
-                    <input type="text" id="playlist-id-input" placeholder="Enter playlist ID or select from above">
-                    <button id="migrate-btn" disabled>Start Migration</button>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div id="progress-fill" class="progress-fill"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Authentication Card -->
+                    <div class="bg-vercel-gray-800 rounded-2xl border border-vercel-gray-700 p-6 shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                        <h2 class="text-xl font-bold mb-6">Platform Authentication</h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-vercel-gray-700 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <span class="font-medium">Spotify</span>
+                                </div>
+                                <span id="spotify-status" class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">Not Authenticated</span>
+                                <button id="spotify-auth-btn" class="bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Connect</button>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-vercel-gray-700 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <span class="font-medium">YouTube Music</span>
+                                </div>
+                                <span id="youtube-status" class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">Not Authenticated</span>
+                                <button id="youtube-auth-btn" class="bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Connect</button>
+                            </div>
+                        </div>
                     </div>
-                    <div id="progress-text" class="progress-text">Ready</div>
+
+                    <!-- Migration Card -->
+                    <div class="bg-vercel-gray-800 rounded-2xl border border-vercel-gray-700 p-6 shadow-card hover:shadow-card-hover transition-shadow duration-300">
+                        <h2 class="text-xl font-bold mb-6">Migrate Playlist</h2>
+                        <div class="space-y-6">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <select id="platform-selector" class="flex-1 bg-vercel-gray-700 border border-vercel-gray-600 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vercel-blue-500 focus:border-transparent">
+                                    <option value="">Select Source Platform</option>
+                                    <option value="spotify">Spotify</option>
+                                    <option value="youtube">YouTube Music</option>
+                                </select>
+                                <button id="load-playlists-btn" class="bg-vercel-gray-700 hover:bg-vercel-gray-600 text-white font-medium py-2.5 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 text-sm" disabled>Load</button>
+                            </div>
+                            
+                            <div class="border border-vercel-gray-700 rounded-lg max-h-60 overflow-y-auto">
+                                <ul id="playlists-container" class="divide-y divide-vercel-gray-700"></ul>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="text" id="playlist-id-input" placeholder="Enter playlist ID or select from above" class="flex-1 bg-vercel-gray-700 border border-vercel-gray-600 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vercel-blue-500 focus:border-transparent">
+                                <button id="migrate-btn" class="bg-gradient-to-r from-vercel-blue-500 to-vercel-purple-500 hover:from-vercel-blue-600 hover:to-vercel-purple-600 text-white font-medium py-2.5 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 text-sm" disabled>Start Migration</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div id="result-container" class="result-container hidden">
-                    <h3>Migration Result</h3>
-                    <p id="result-text"></p>
+
+                <!-- Progress Section -->
+                <div class="mt-8 bg-vercel-gray-800 rounded-2xl border border-vercel-gray-700 p-6 shadow-card">
+                    <h2 class="text-xl font-bold mb-6">Migration Progress</h2>
+                    <div class="mb-4">
+                        <div class="w-full bg-vercel-gray-700 rounded-full h-2.5">
+                            <div id="progress-fill" class="bg-gradient-to-r from-vercel-blue-500 to-vercel-purple-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div id="progress-text" class="text-center text-vercel-gray-400 text-sm">Ready to start migration</div>
+                    <div id="result-container" class="hidden mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+                        <h3 class="text-lg font-bold text-green-400 mb-2">Migration Complete!</h3>
+                        <p id="result-text" class="text-vercel-gray-300 break-all"></p>
+                    </div>
                 </div>
-            </section>
+            </div>
         </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-vercel-gray-800 py-6">
+            <div class="container mx-auto px-4 text-center text-vercel-gray-500 text-sm">
+                <p>© 2023 MusicTransfer. All rights reserved.</p>
+            </div>
+        </footer>
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const html = document.documentElement;
+            
+            // Check for saved theme or default to dark
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            html.classList.toggle('dark', savedTheme === 'dark');
+            
+            themeToggle.addEventListener('click', function() {
+                html.classList.toggle('dark');
+                const isDark = html.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                
+                // Update icon based on theme
+                const icon = themeToggle.querySelector('svg');
+                if (isDark) {
+                    icon.innerHTML = '<path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />';
+                } else {
+                    icon.innerHTML = '<path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
