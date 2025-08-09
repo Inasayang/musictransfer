@@ -3,12 +3,27 @@ let selectedPlaylistId = null;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize theme
+    initializeTheme();
+    
     // Initialize authentication status
     updateAuthStatus();
     
     // Bind event listeners
     bindEventListeners();
 });
+
+// Initialize theme based on saved preference or system preference
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+}
 
 // Update authentication status
 function updateAuthStatus() {
@@ -18,17 +33,20 @@ function updateAuthStatus() {
             // Update Spotify status
             const spotifyStatus = document.getElementById('spotify-status');
             const spotifyBtn = document.getElementById('spotify-auth-btn');
+            const spotifyReauthBtn = document.getElementById('spotify-reauth-btn');
             
             if (data.spotify) {
                 spotifyStatus.textContent = 'Connected';
                 spotifyStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400';
-                spotifyBtn.disabled = true;
+                spotifyBtn.classList.add('hidden'); // Hide connect button when connected
+                spotifyReauthBtn.classList.remove('hidden'); // Show re-auth button when connected
                 // Update status indicator
                 spotifyStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-green-500';
             } else {
                 spotifyStatus.textContent = 'Not Authenticated';
                 spotifyStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400';
-                spotifyBtn.disabled = false;
+                spotifyBtn.classList.remove('hidden'); // Show connect button when not connected
+                spotifyReauthBtn.classList.add('hidden'); // Hide re-auth button when not connected
                 // Update status indicator
                 spotifyStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-red-500';
             }
@@ -36,17 +54,20 @@ function updateAuthStatus() {
             // Update YouTube status
             const youtubeStatus = document.getElementById('youtube-status');
             const youtubeBtn = document.getElementById('youtube-auth-btn');
+            const youtubeReauthBtn = document.getElementById('youtube-reauth-btn');
             
             if (data.youtube) {
                 youtubeStatus.textContent = 'Connected';
                 youtubeStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400';
-                youtubeBtn.disabled = true;
+                youtubeBtn.classList.add('hidden'); // Hide connect button when connected
+                youtubeReauthBtn.classList.remove('hidden'); // Show re-auth button when connected
                 // Update status indicator
                 youtubeStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-green-500';
             } else {
                 youtubeStatus.textContent = 'Not Authenticated';
                 youtubeStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400';
-                youtubeBtn.disabled = false;
+                youtubeBtn.classList.remove('hidden'); // Show connect button when not connected
+                youtubeReauthBtn.classList.add('hidden'); // Hide re-auth button when not connected
                 // Update status indicator
                 youtubeStatus.previousElementSibling.querySelector('div').className = 'w-3 h-3 rounded-full bg-red-500';
             }
@@ -66,9 +87,41 @@ function bindEventListeners() {
         window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600');
     });
     
+    // Spotify re-authentication button
+    document.getElementById('spotify-reauth-btn').addEventListener('click', function() {
+        // For Spotify, we don't have an automatic refresh mechanism, so we directly re-authenticate
+        window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600');
+    });
+    
     // YouTube authentication button
     document.getElementById('youtube-auth-btn').addEventListener('click', function() {
         window.open('/auth/youtube', 'YouTube Authentication', 'width=600,height=600');
+    });
+    
+    // YouTube re-authentication button
+    document.getElementById('youtube-reauth-btn').addEventListener('click', function() {
+        // First try to refresh the token automatically
+        fetch('/api/auth/youtube/refresh', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh successful
+                alert('YouTube authentication refreshed successfully!');
+                updateAuthStatus(); // Update the UI to show connected status
+            } else {
+                // Refresh failed, need to re-authenticate manually
+                alert('Automatic refresh failed. Opening manual authentication window...');
+                window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+            }
+        })
+        .catch(err => {
+            console.error('Failed to refresh YouTube authentication:', err);
+            // If refresh request fails, proceed with manual re-authentication
+            alert('Automatic refresh failed. Opening manual authentication window...');
+            window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+        });
     });
     
     // Platform selector
@@ -118,11 +171,38 @@ function loadPlaylists(platform) {
                         const reauthBtn = document.getElementById('reauth-youtube-playlist-btn');
                         if (reauthBtn) {
                             reauthBtn.addEventListener('click', function() {
-                                // Open YouTube authentication in a new window
-                                window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
-                                
-                                // Update UI to show that re-authentication is in progress
-                                container.innerHTML = '<li class="p-4 text-center text-vercel-gray-400">Re-authentication in progress... Please complete the authentication in the popup window and try loading playlists again.</li>';
+                                // First try to refresh the token automatically
+                                fetch('/api/auth/youtube/refresh', {
+                                    method: 'POST'
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        // Refresh successful, try to load playlists again
+                                        container.innerHTML = '<li class="p-4 text-center text-vercel-gray-400">Authentication refreshed! Reloading playlists...</li>';
+                                        setTimeout(() => loadPlaylists(platform), 1000);
+                                    } else {
+                                        // Refresh failed, need to re-authenticate manually
+                                        container.innerHTML = '<li class="p-4 text-center text-red-400">Automatic refresh failed. Manual re-authentication required...<br>Opening authentication window...</li>';
+                                        
+                                        // Open YouTube authentication in a new window
+                                        window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+                                        
+                                        // Update UI to show that re-authentication is in progress
+                                        container.innerHTML = '<li class="p-4 text-center text-vercel-gray-400">Manual re-authentication in progress... Please complete the authentication in the popup window and try loading playlists again.</li>';
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('Failed to refresh YouTube authentication:', err);
+                                    // If refresh request fails, proceed with manual re-authentication
+                                    container.innerHTML = '<li class="p-4 text-center text-red-400">Automatic refresh failed. Manual re-authentication required...<br>Opening authentication window...</li>';
+                                    
+                                    // Open YouTube authentication in a new window
+                                    window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+                                    
+                                    // Update UI to show that re-authentication is in progress
+                                    container.innerHTML = '<li class="p-4 text-center text-vercel-gray-400">Manual re-authentication in progress... Please complete the authentication in the popup window and try loading playlists again.</li>';
+                                });
                             });
                         }
                     }, 100);
@@ -262,29 +342,76 @@ function showError(error) {
             const reauthBtn = document.getElementById('reauth-youtube-btn');
             if (reauthBtn) {
                 reauthBtn.addEventListener('click', function() {
-                    // Open YouTube authentication in a new window
-                    window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
-                    
-                    // Update UI to show that re-authentication is in progress
-                    progressText.innerHTML = 'Re-authentication in progress... Please complete the authentication in the popup window.';
-                    
-                    // Periodically check if authentication is complete
-                    const authCheckInterval = setInterval(() => {
-                        fetch('/api/auth/status')
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.youtube) {
-                                    clearInterval(authCheckInterval);
-                                    progressText.textContent = 'YouTube re-authentication successful! You can now try the migration again.';
-                                    document.getElementById('progress-fill').classList.remove('bg-red-500');
-                                    document.getElementById('progress-fill').classList.add('bg-gradient-to-r', 'from-vercel-blue-500', 'to-vercel-purple-500');
-                                    updateAuthStatus(); // Update the UI to show connected status
-                                }
-                            })
-                            .catch(err => {
-                                console.error('Failed to check authentication status:', err);
-                            });
-                    }, 2000); // Check every 2 seconds
+                    // First try to refresh the token automatically
+                    fetch('/api/auth/youtube/refresh', {
+                        method: 'POST'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Refresh successful
+                            progressText.textContent = 'YouTube authentication refreshed successfully! You can now try the migration again.';
+                            document.getElementById('progress-fill').classList.remove('bg-red-500');
+                            document.getElementById('progress-fill').classList.add('bg-gradient-to-r', 'from-vercel-blue-500', 'to-vercel-purple-500');
+                            updateAuthStatus(); // Update the UI to show connected status
+                        } else {
+                            // Refresh failed, need to re-authenticate manually
+                            progressText.innerHTML = 'Automatic refresh failed. Manual re-authentication required...';
+                            
+                            // Open YouTube authentication in a new window
+                            window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+                            
+                            // Update UI to show that re-authentication is in progress
+                            progressText.innerHTML = 'Manual re-authentication in progress... Please complete the authentication in the popup window.';
+                            
+                            // Periodically check if authentication is complete
+                            const authCheckInterval = setInterval(() => {
+                                fetch('/api/auth/status')
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.youtube) {
+                                            clearInterval(authCheckInterval);
+                                            progressText.textContent = 'YouTube re-authentication successful! You can now try the migration again.';
+                                            document.getElementById('progress-fill').classList.remove('bg-red-500');
+                                            document.getElementById('progress-fill').classList.add('bg-gradient-to-r', 'from-vercel-blue-500', 'to-vercel-purple-500');
+                                            updateAuthStatus(); // Update the UI to show connected status
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error('Failed to check authentication status:', err);
+                                    });
+                            }, 2000); // Check every 2 seconds
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to refresh YouTube authentication:', err);
+                        // If refresh request fails, proceed with manual re-authentication
+                        progressText.innerHTML = 'Automatic refresh failed. Manual re-authentication required...';
+                        
+                        // Open YouTube authentication in a new window
+                        window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600');
+                        
+                        // Update UI to show that re-authentication is in progress
+                        progressText.innerHTML = 'Manual re-authentication in progress... Please complete the authentication in the popup window.';
+                        
+                        // Periodically check if authentication is complete
+                        const authCheckInterval = setInterval(() => {
+                            fetch('/api/auth/status')
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.youtube) {
+                                        clearInterval(authCheckInterval);
+                                        progressText.textContent = 'YouTube re-authentication successful! You can now try the migration again.';
+                                        document.getElementById('progress-fill').classList.remove('bg-red-500');
+                                        document.getElementById('progress-fill').classList.add('bg-gradient-to-r', 'from-vercel-blue-500', 'to-vercel-purple-500');
+                                        updateAuthStatus(); // Update the UI to show connected status
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('Failed to check authentication status:', err);
+                                });
+                        }, 2000); // Check every 2 seconds
+                    });
                 });
             }
         }, 100);

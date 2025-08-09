@@ -29,7 +29,8 @@ setup_logging("musictransfer.log", logging.INFO)
 app = Flask(__name__)
 
 # Configure session
-app.config['SESSION_TYPE'] = 'filesystem'
+# app.config['SESSION_TYPE'] = 'filesystem'
+# app.config['SESSION_FILE_DIR'] = './sessions'
 app.config['SECRET_KEY'] = Config.SECRET_KEY or 'dev-key-change-in-production'
 
 # Global variables
@@ -162,6 +163,7 @@ def callback():
             return render_template('callback.html', platform='Spotify')
         elif is_youtube and youtube_connector and code:
             token_info = youtube_connector.exchange_code_for_token(code)
+            logging.info("YouTube token_info: %s", token_info)
             session['youtube_authenticated'] = True
             session['youtube_token_info'] = token_info
             session.pop('auth_in_progress', None)  # Clear authentication in progress flag
@@ -177,6 +179,9 @@ def callback():
     except Exception as e:
         logging.error("Authentication callback processing failed: %s", str(e))
         session.pop('auth_in_progress', None)  # Clear authentication in progress flag
+        # Provide specific guidance for YouTube refresh token issues
+        if "No refresh token available" in str(e) or "YouTube authentication has expired" in str(e):
+            return render_template('error.html', error="YouTube authentication failed. Please try re-authenticating with YouTube. If the problem persists, you may need to revoke access in your Google account settings and re-authorize the application.")
         return render_template('error.html', error=str(e))
 
 def get_spotify_connector():
@@ -218,10 +223,21 @@ def get_youtube_connector():
     
     # If there's already a connector and it's authenticated, return directly
     if youtube_connector and hasattr(youtube_connector, 'access_token') and youtube_connector.access_token:
+        logging.info("Returning existing YouTube connector with access_token: %s, refresh_token: %s", 
+                    youtube_connector.access_token, youtube_connector.refresh_token)
+        # Check if connector is properly authenticated
+        if not youtube_connector.is_authenticated():
+            logging.warning("Existing YouTube connector not properly authenticated, forcing re-authentication")
+            session.pop('youtube_authenticated', None)
+            session.pop('youtube_token_info', None)
+            youtube_connector = None
+            return None
         return youtube_connector
     
     # Get token information from session
     token_info = session.get('youtube_token_info')
+    logging.info("Retrieved token_info from session: %s", token_info)
+    
     if token_info:
         # Create new connector
         youtube_connector = YouTubeMusicConnector(
@@ -234,17 +250,91 @@ def get_youtube_connector():
         if isinstance(token_info, dict):
             youtube_connector.access_token = token_info.get('access_token')
             youtube_connector.refresh_token = token_info.get('refresh_token')
+            logging.info("Restored tokens from dict. Access token: %s, Refresh token: %s", 
+                        youtube_connector.access_token, youtube_connector.refresh_token)
+            # Check if connector is properly authenticated
+            if not youtube_connector.is_authenticated():
+                logging.warning("Restored YouTube connector not properly authenticated, forcing re-authentication")
+                session.pop('youtube_authenticated', None)
+                session.pop('youtube_token_info', None)
+                youtube_connector = None
+                return None
         elif isinstance(token_info, str):
             # If it's a JSON string, parse it
             try:
                 token_data = json.loads(token_info)
                 youtube_connector.access_token = token_data.get('access_token')
                 youtube_connector.refresh_token = token_data.get('refresh_token')
-            except:
+                logging.info("Restored tokens from JSON string. Access token: %s, Refresh token: %s", 
+                            youtube_connector.access_token, youtube_connector.refresh_token)
+                # Check if connector is properly authenticated
+                if not youtube_connector.is_authenticated():
+                    logging.warning("Restored YouTube connector not properly authenticated, forcing re-authentication")
+                    session.pop('youtube_authenticated', None)
+                    session.pop('youtube_token_info', None)
+                    youtube_connector = None
+                    return None
+            except Exception as e:
+                logging.error("Failed to parse token_info as JSON: %s", str(e))
                 pass
         return youtube_connector
     
+    logging.warning("No YouTube token info found in session")
     return None
+
+@app.route('/api/auth/youtube/force')
+def force_youtube_auth():
+    """
+    Force re-authentication with YouTube by clearing session and redirecting to auth endpoint
+    """
+    # Clear YouTube authentication from session
+    session.pop('youtube_authenticated', None)
+    session.pop('youtube_token_info', None)
+    global youtube_connector
+    youtube_connector = None
+    
+    logging.info("Forced YouTube re-authentication - cleared session and connector")
+    
+    # Redirect to YouTube auth endpoint
+    return redirect(url_for('auth_youtube'))
+
+
+@app.route('/api/auth/youtube/refresh', methods=['POST'])
+def refresh_youtube_auth():
+    """
+    Attempt to refresh YouTube authentication using refresh token
+    """
+    global youtube_connector
+    
+    logging.info("Attempting to refresh YouTube authentication")
+    
+    # Check if we have a YouTube connector
+    if not youtube_connector:
+        youtube_connector = get_youtube_connector()
+    
+    # If we still don't have a connector, return error
+    if not youtube_connector:
+        logging.warning("No YouTube connector available for refresh")
+        return jsonify({'success': False, 'error': 'No YouTube authentication found. Please re-authenticate.'}), 400
+    
+    # Try to refresh the access token
+    try:
+        token_info = youtube_connector.refresh_access_token()
+        logging.info("Successfully refreshed YouTube access token")
+        
+        # Update session with new token info
+        session['youtube_token_info'] = token_info
+        session['youtube_authenticated'] = True
+        
+        return jsonify({'success': True, 'message': 'YouTube authentication refreshed successfully'})
+    except Exception as e:
+        logging.error("Failed to refresh YouTube authentication: %s", str(e))
+        # Clear session and connector if refresh failed
+        session.pop('youtube_authenticated', None)
+        session.pop('youtube_token_info', None)
+        youtube_connector = None
+        return jsonify({'success': False, 'error': str(e)}), 400
+
 
 @app.route('/api/playlists')
 def get_playlists():
@@ -285,8 +375,8 @@ def get_playlists():
             # Get or create YouTube connector
             connector = get_youtube_connector()
             if not connector:
-                logging.warning("Unable to create YouTube connector")
-                return jsonify({'error': 'YouTube not properly authorized'}), 401
+                logging.warning("Unable to create YouTube connector - missing refresh token")
+                return jsonify({'error': 'YouTube authentication has expired. Please re-authenticate with YouTube.'}), 401
             
             # Check if there's an access token
             if not hasattr(connector, 'access_token') or not connector.access_token:
@@ -336,8 +426,11 @@ def start_migration():
     spotify_conn = get_spotify_connector()
     youtube_conn = get_youtube_connector()
     
-    if not spotify_conn or not youtube_conn:
-        return jsonify({'error': 'Unable to initialize platform connectors'}), 400
+    if not spotify_conn:
+        return jsonify({'error': 'Unable to initialize Spotify connector'}), 400
+    
+    if not youtube_conn:
+        return jsonify({'error': 'YouTube authentication has expired. Please re-authenticate with YouTube.'}), 400
     
     # Reset migration status
     migration_status['running'] = True
@@ -347,6 +440,7 @@ def start_migration():
     migration_status['error'] = None
     
     # Execute migration in background thread
+    # Remove the copy_current_request_context decorator and pass connectors directly
     thread = threading.Thread(target=run_migration, args=(playlist_id, spotify_conn, youtube_conn))
     thread.daemon = True
     thread.start()
@@ -359,12 +453,26 @@ def run_migration(playlist_id, spotify_conn=None, youtube_conn=None):
     """
     global migration_status, migration_engine
     
+    logging.info("Starting run_migration with playlist_id: %s", playlist_id)
+    logging.info("Initial spotify_conn: %s", spotify_conn)
+    logging.info("Initial youtube_conn: %s", youtube_conn)
+    
     try:
         # If connectors are not provided, try to restore from session
         if spotify_conn is None:
+            logging.info("Getting Spotify connector from session")
             spotify_conn = get_spotify_connector()
         if youtube_conn is None:
+            logging.info("Getting YouTube connector from session")
             youtube_conn = get_youtube_connector()
+            
+        logging.info("Final spotify_conn: %s", spotify_conn)
+        logging.info("Final youtube_conn: %s", youtube_conn)
+        if youtube_conn:
+            logging.info("YouTube connector access_token: %s", youtube_conn.access_token)
+            logging.info("YouTube connector refresh_token: %s", youtube_conn.refresh_token)
+        else:
+            raise ValueError("YouTube authentication has expired. Please re-authenticate with YouTube.")
             
         # Create data converter and migration engine
         converter = DataConverter()
@@ -384,7 +492,11 @@ def run_migration(playlist_id, spotify_conn=None, youtube_conn=None):
         logging.error("Migration failed: %s", str(e))
         migration_status['running'] = False
         migration_status['error'] = str(e)
-        migration_status['description'] = f'Migration failed: {str(e)}'
+        # Provide a more user-friendly error message for YouTube authentication issues
+        if "No refresh token available" in str(e) or "YouTube authentication has expired" in str(e):
+            migration_status['description'] = 'Migration failed: YouTube authentication has expired. Please re-authenticate with YouTube and try again.'
+        else:
+            migration_status['description'] = f'Migration failed: {str(e)}'
 
 def migration_progress_callback(current, total, description):
     """
@@ -426,9 +538,6 @@ if __name__ == '__main__':
         
     if not os.path.exists(static_dir):
         os.makedirs(static_dir)
-    
-    # Open application in default browser
-    webbrowser.open('http://localhost:5000')
     
     # Start Flask application
     app.run(debug=True, port=5000)

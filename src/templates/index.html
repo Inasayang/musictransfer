@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -50,7 +50,10 @@
                                     <span class="font-medium">Spotify</span>
                                 </div>
                                 <span id="spotify-status" class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">Not Authenticated</span>
-                                <button id="spotify-auth-btn" class="bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Connect</button>
+                                <div class="flex space-x-2">
+                                    <button id="spotify-auth-btn" class="bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Connect</button>
+                                    <button id="spotify-reauth-btn" class="bg-vercel-gray-600 hover:bg-vercel-gray-500 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200 hidden">Re-auth</button>
+                                </div>
                             </div>
                             <div class="flex items-center justify-between p-4 bg-vercel-gray-700 rounded-lg">
                                 <div class="flex items-center space-x-3">
@@ -58,7 +61,10 @@
                                     <span class="font-medium">YouTube Music</span>
                                 </div>
                                 <span id="youtube-status" class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">Not Authenticated</span>
-                                <button id="youtube-auth-btn" class="bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Connect</button>
+                                <div class="flex space-x-2">
+                                    <button id="youtube-auth-btn" class="bg-vercel-blue-500 hover:bg-vercel-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200">Connect</button>
+                                    <button id="youtube-reauth-btn" class="bg-vercel-gray-600 hover:bg-vercel-gray-500 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition duration-200 hidden">Re-auth</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -104,13 +110,6 @@
                 </div>
             </div>
         </main>
-
-        <!-- Footer -->
-        <footer class="border-t border-vercel-gray-800 py-6">
-            <div class="container mx-auto px-4 text-center text-vercel-gray-500 text-sm">
-                <p>© 2023 MusicTransfer. All rights reserved.</p>
-            </div>
-        </footer>
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
@@ -120,22 +119,25 @@
             const themeToggle = document.getElementById('theme-toggle');
             const html = document.documentElement;
             
-            // Check for saved theme or default to dark
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            html.classList.toggle('dark', savedTheme === 'dark');
-            
-            themeToggle.addEventListener('click', function() {
-                html.classList.toggle('dark');
+            // Update theme toggle icon based on current theme
+            function updateThemeIcon() {
                 const isDark = html.classList.contains('dark');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                
-                // Update icon based on theme
                 const icon = themeToggle.querySelector('svg');
                 if (isDark) {
                     icon.innerHTML = '<path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />';
                 } else {
                     icon.innerHTML = '<path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />';
                 }
+            }
+            
+            // Set initial icon
+            updateThemeIcon();
+            
+            themeToggle.addEventListener('click', function() {
+                html.classList.toggle('dark');
+                const isDark = html.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                updateThemeIcon();
             });
         });
     </script>

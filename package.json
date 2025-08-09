@@ -4,8 +4,8 @@
   "description": "[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)",
   "main": "index.js",
   "scripts": {
-    "build-css": "bunx tailwindcss-cli -i ./src/static/css/input.css -o ./src/static/css/output.css --watch",
-    "build-css-prod": "bunx tailwindcss-cli -i ./src/static/css/input.css -o ./src/static/css/output.css --minify"
+    "build-css": "bunx @tailwindcss/cli  -i ./src/static/css/input.css -o ./src/static/css/output.css --watch",
+    "build-css-prod": " bunx @tailwindcss/cli  -i ./src/static/css/input.css -o ./src/static/css/output.css --minify"
   },
   "repository": {
     "type": "git",
@@ -29,6 +29,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "caniuse-lite": "^1.0.30001731"
+    "caniuse-lite": "^1.0.30001733"
   }
 }

@@ -48,7 +48,9 @@ class YouTubeMusicConnector:
             "redirect_uri": self.redirect_uri,
             "scope": "https://www.googleapis.com/auth/youtube",
             "state": state,
-            "access_type": "offline"
+            "access_type": "offline",  # Request offline access to get refresh token
+            "prompt": "consent",  # Force to show consent screen to get refresh token
+            "include_granted_scopes": "true"  # Include previously granted scopes
         }
         
         # Build authorization URL
@@ -67,6 +69,7 @@ class YouTubeMusicConnector:
         Returns:
             Dictionary containing access token and refresh token
         """
+        import logging
         # Prepare request parameters
         data = {
             "client_id": self.client_id,
@@ -77,14 +80,53 @@ class YouTubeMusicConnector:
         }
         
         # Send request
+        logging.info("Exchanging code for token with data: %s", data)
         response = requests.post(self.token_url, data=data)
+        logging.info("Token exchange response status: %s", response.status_code)
+        logging.info("Token exchange response headers: %s", response.headers)
+        logging.info("Token exchange response text: %s", response.text)
         response.raise_for_status()
         
         token_info = response.json()
+        logging.info("YouTube token exchange response: %s", token_info)
         self.access_token = token_info["access_token"]
         self.refresh_token = token_info.get("refresh_token")
+        logging.info("YouTube access_token: %s", self.access_token)
+        logging.info("YouTube refresh_token: %s", self.refresh_token)
+        
+        # Check if refresh_token is missing
+        if not self.refresh_token:
+            logging.warning("No refresh_token in token exchange response. This may cause issues later.")
+            logging.warning("Response keys: %s", list(token_info.keys()))
+            logging.warning("This could be because the user has already authorized the app. Try revoking access and re-authorizing.")
+            # Log additional information that might help diagnose the issue
+            logging.warning("If this continues to happen, check that:")
+            logging.warning("1. The OAuth client is properly configured in Google Cloud Console")
+            logging.warning("2. The redirect URI matches exactly what's registered in Google Cloud Console")
+            logging.warning("3. The user is granting consent properly during authentication")
         
         return token_info
+    
+    def is_authenticated(self) -> bool:
+        """
+        Check if the connector is properly authenticated with both access and refresh tokens
+        
+        Returns:
+            bool: True if properly authenticated, False otherwise
+        """
+        import logging
+        logging.info("Checking YouTube connector authentication status")
+        logging.info("Access token: %s", self.access_token)
+        logging.info("Refresh token: %s", self.refresh_token)
+        
+        # Check if we have both access and refresh tokens
+        has_access_token = bool(self.access_token)
+        has_refresh_token = bool(self.refresh_token)
+        
+        logging.info("Has access token: %s", has_access_token)
+        logging.info("Has refresh token: %s", has_refresh_token)
+        
+        return has_access_token and has_refresh_token
     
     def refresh_access_token(self) -> Dict:
         """
@@ -93,8 +135,12 @@ class YouTubeMusicConnector:
         Returns:
             Dictionary containing new access token
         """
+        import logging
+        logging.info("Attempting to refresh access token. Current refresh_token: %s", self.refresh_token)
+        
         if not self.refresh_token:
-            raise ValueError("No refresh token available")
+            logging.error("No refresh token available for YouTube connector")
+            raise ValueError("No refresh token available. Please re-authenticate with YouTube.")
             
         # Prepare request parameters
         data = {
@@ -104,13 +150,39 @@ class YouTubeMusicConnector:
             "refresh_token": self.refresh_token
         }
         
+        # Log request details for debugging
+        logging.info("Token refresh request URL: %s", self.token_url)
+        logging.info("Token refresh request data: %s", data)
+        
         # Send request
         response = requests.post(self.token_url, data=data)
-        response.raise_for_status()
+        logging.info("Token refresh response status: %s", response.status_code)
+        logging.info("Token refresh response headers: %s", response.headers)
+        logging.info("Token refresh response text: %s", response.text)
+        
+        # Check if the response is successful
+        if not response.ok:
+            logging.error("Failed to refresh access token. Status code: %s", response.status_code)
+            logging.error("Response content: %s", response.text)
+            
+            # If it's a client error (4xx), the refresh token might be invalid
+            if 400 <= response.status_code < 500:
+                logging.error("Client error during token refresh. Refresh token may be invalid.")
+                self.refresh_token = None  # Clear the invalid refresh token
+                raise ValueError("YouTube authentication has expired. Please re-authenticate with YouTube.")
+            
+            response.raise_for_status()
         
         token_info = response.json()
         self.access_token = token_info["access_token"]
         
+        # Note: refresh_token is typically not returned in refresh responses
+        # but if it is, we should update it
+        if "refresh_token" in token_info:
+            self.refresh_token = token_info["refresh_token"]
+            logging.info("Updated refresh token from refresh response")
+        
+        logging.info("Successfully refreshed access token. New access_token: %s", self.access_token)
         return token_info
     
     def _make_authenticated_request(self, method: str, url: str, **kwargs) -> requests.Response:
@@ -125,7 +197,13 @@ class YouTubeMusicConnector:
         Returns:
             HTTP response
         """
+        import logging
+        logging.info("Making authenticated request to %s", url)
+        logging.info("Current access_token: %s", self.access_token)
+        logging.info("Current refresh_token: %s", self.refresh_token)
+        
         if not self.access_token:
+            logging.error("No access token available. Please authenticate first.")
             raise ValueError("No access token available. Please authenticate first.")
             
         headers = kwargs.pop("headers", {})
@@ -135,19 +213,40 @@ class YouTubeMusicConnector:
         if 'json' in kwargs and 'Content-Type' not in headers:
             headers['Content-Type'] = 'application/json'
         
+        # Log detailed request information
+        logging.info("Request method: %s", method)
+        logging.info("Request headers: %s", headers)
+        logging.info("Request kwargs: %s", kwargs)
+        
         response = requests.request(method, url, headers=headers, **kwargs)
+        logging.info("Initial request response status: %s", response.status_code)
+        logging.info("Initial request response headers: %s", response.headers)
+        logging.info("Initial request response text (first 1000 chars): %s", response.text[:1000] if response.text else "")
         
         # If token expired, try to refresh
         if response.status_code == 401:
-            self.refresh_access_token()
-            headers["Authorization"] = f"Bearer {self.access_token}"
-            response = requests.request(method, url, headers=headers, **kwargs)
+            logging.info("Token expired (401 response), attempting to refresh...")
+            try:
+                self.refresh_access_token()
+                headers["Authorization"] = f"Bearer {self.access_token}"
+                logging.info("Retrying request with new access token")
+                response = requests.request(method, url, headers=headers, **kwargs)
+                logging.info("Retry request response status: %s", response.status_code)
+                logging.info("Retry request response headers: %s", response.headers)
+                logging.info("Retry request response text (first 1000 chars): %s", response.text[:1000] if response.text else "")
+            except ValueError as e:
+                if "No refresh token available" in str(e) or "YouTube authentication has expired" in str(e):
+                    logging.error("Refresh token is missing or invalid. User needs to re-authenticate with YouTube.")
+                    raise ValueError("YouTube authentication has expired. Please re-authenticate with YouTube.") from e
+                else:
+                    logging.error("Unexpected error during token refresh: %s", str(e))
+                    raise
             
         # If there's an error, print detailed information
         if not response.ok:
-            import logging
             logging.error("YouTube API Error: %s - %s", response.status_code, response.text)
             logging.error("Request URL: %s", url)
+            logging.error("Request method: %s", method)
             logging.error("Request headers: %s", headers)
             logging.error("Request kwargs: %s", kwargs)
             

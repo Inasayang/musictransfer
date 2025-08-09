@@ -174,7 +174,9 @@ class MigrationEngine:
             title = self.converter.common_playlist_to_youtube_title(common_playlist)
             
             # Create playlist
+            self.logger.info("Attempting to create YouTube Music playlist with title: %s", title)
             playlist_data = self.youtube_connector.create_playlist(title)
+            self.logger.info("YouTube Music playlist creation response: %s", playlist_data)
             
             youtube_playlist_id = playlist_data.get("id")
             if not youtube_playlist_id:
@@ -185,6 +187,10 @@ class MigrationEngine:
             
         except Exception as e:
             self.logger.error("Failed to create YouTube Music playlist: %s", str(e))
+            self.logger.error("Exception type: %s", type(e).__name__)
+            # Provide a more specific error message for authentication issues
+            if "No refresh token available" in str(e) or "YouTube authentication has expired" in str(e):
+                raise ValueError("YouTube authentication has expired. Please re-authenticate with YouTube and try again.") from e
             raise
             
     def _migrate_tracks(
@@ -211,6 +217,7 @@ class MigrationEngine:
             try:
                 # Generate search query
                 search_query = self.converter.create_youtube_search_query(track)
+                self.logger.info("Searching for track: %s with query: %s", track, search_query)
                 
                 # Apply rate limiting
                 self.youtube_limiter.acquire()
@@ -219,6 +226,7 @@ class MigrationEngine:
                 search_results = self.youtube_connector.search_video(
                     search_query, max_results=1
                 )
+                self.logger.info("Search results for %s: %s", track, search_results)
                 
                 if not search_results:
                     self.logger.warning("No matching video found: %s", track)
@@ -231,6 +239,8 @@ class MigrationEngine:
                     self.logger.warning("Video ID not found in search results: %s", track)
                     failed_tracks += 1
                     continue
+                
+                self.logger.info("Adding video %s to playlist for track: %s", video_id, track)
                 
                 # Add video to playlist
                 self._add_video_to_playlist_with_retry(youtube_playlist_id, video_id)
@@ -246,6 +256,7 @@ class MigrationEngine:
                 failed_tracks += 1
             except Exception as e:
                 self.logger.error("Failed to migrate track %s: Unknown error: %s", track, str(e))
+                self.logger.error("Exception type: %s", type(e).__name__)
                 failed_tracks += 1
             
             # Update progress

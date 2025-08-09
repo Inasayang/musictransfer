@@ -8,6 +8,7 @@ migration_plan.md
 .claude
 key.txt
 .env
+.env2
 *.log
 .venv
 bun.lock

@@ -1,3 +1,118 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Light theme */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --header-border: #e5e5e5;
+  --card-bg: #f8f8f8;
+  --card-border: #eaeaea;
+  --input-bg: #ffffff;
+  --input-border: #d4d4d4;
+  --button-bg: #0070f3;
+  --button-hover: #0061d6;
+  --status-connected: #10b981;
+  --status-disconnected: #ef4444;
+  --progress-bg: #e5e5e5;
+  --progress-fill: linear-gradient(to right, #0070f3, #7928ca);
+}
+
+/* Dark theme */
+.dark {
+  --bg-color: #000000;
+  --text-color: #ffffff;
+  --header-border: #262626;
+  --card-bg: #171717;
+  --card-border: #404040;
+  --input-bg: #262626;
+  --input-border: #404040;
+  --button-bg: #0070f3;
+  --button-hover: #0061d6;
+  --status-connected: #10b981;
+  --status-disconnected: #ef4444;
+  --progress-bg: #404040;
+  --progress-fill: linear-gradient(to right, #0070f3, #7928ca);
+}
+
+/* Apply theme variables */
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Header */
+.border-b {
+  border-color: var(--header-border);
+}
+
+/* Cards */
+.bg-vercel-gray-800 {
+  background-color: var(--card-bg);
+}
+
+.border-vercel-gray-700 {
+  border-color: var(--card-border);
+}
+
+/* Inputs */
+.bg-vercel-gray-700 {
+  background-color: var(--input-bg);
+}
+
+.border-vercel-gray-600 {
+  border-color: var(--input-border);
+}
+
+/* Buttons */
+.bg-vercel-blue-500 {
+  background-color: var(--button-bg);
+}
+
+.hover\:bg-vercel-blue-600:hover {
+  background-color: var(--button-hover);
+}
+
+/* Status indicators */
+.bg-green-500\/20 {
+  background-color: var(--status-connected);
+  opacity: 0.2;
+}
+
+.text-green-400 {
+  color: var(--status-connected);
+}
+
+.bg-red-500\/20 {
+  background-color: var(--status-disconnected);
+  opacity: 0.2;
+}
+
+.text-red-400 {
+  color: var(--status-disconnected);
+}
+
+/* Progress bar */
+.bg-vercel-gray-700 {
+  background-color: var(--progress-bg);
+}
+
+.bg-gradient-to-r {
+  background: var(--progress-fill);
+}
+
+/* Text colors */
+.text-vercel-gray-100 {
+  color: var(--text-color);
+}
+
+.text-vercel-gray-400 {
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+.text-vercel-gray-500 {
+  color: var(--text-color);
+  opacity: 0.5;
+}
