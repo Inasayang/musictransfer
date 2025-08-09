@@ -6,12 +6,12 @@ import threading
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 
 # Local application imports
-from connectors.spotify_connector import SpotifyConnector
-from connectors.youtube_connector import YouTubeMusicConnector
-from converters.data_converter import DataConverter
-from engine.migration_engine import MigrationEngine
-from utils.error_handling import setup_logging
-from config import Config
+from musictransfer.connectors.spotify_connector import SpotifyConnector
+from musictransfer.connectors.youtube_connector import YouTubeMusicConnector
+from musictransfer.converters.data_converter import DataConverter
+from musictransfer.engine.migration_engine import MigrationEngine
+from musictransfer.utils.error_handling import setup_logging
+from musictransfer.config import Config
 
 # Load configuration
 Config.load_config()
@@ -24,8 +24,10 @@ if not is_valid:
 # Setup logging
 setup_logging("musictransfer.log", logging.INFO)
 
-# Create Flask application
-app = Flask(__name__)
+# Create Flask application with correct template and static folder paths
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+static_dir = os.path.join(os.path.dirname(__file__), 'static')
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
 # Configure session
 # app.config['SESSION_TYPE'] = 'filesystem'

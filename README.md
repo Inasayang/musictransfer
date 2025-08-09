@@ -60,22 +60,29 @@ REDIRECT_URI=http://localhost:5000/callback
 
 ## Usage
 
-1. Start the application:
+There are multiple ways to start the application:
+
+1. Using Python's module syntax:
 ```bash
-pdm run src/__main__.py
+python -m musictransfer
 ```
 
-2. Open your browser to `http://localhost:5000`
+2. Using PDM (if installed):
+```bash
+pdm run python -m musictransfer
+```
 
-3. Authenticate with both Spotify and YouTube Music:
+3. Open your browser to `http://localhost:5000`
+
+4. Authenticate with both Spotify and YouTube Music:
    - Click "Connect to Spotify" and authorize the application
    - Click "Connect to YouTube Music" and authorize the application
 
-4. Select a Spotify playlist to migrate
+5. Select a Spotify playlist to migrate
 
-5. Click "Start Migration" and monitor the progress
+6. Click "Start Migration" and monitor the progress
 
-6. Your playlist will be created in YouTube Music with all transferable tracks
+7. Your playlist will be created in YouTube Music with all transferable tracks
 
 ## Limitations
 

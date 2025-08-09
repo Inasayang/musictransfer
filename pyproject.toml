@@ -21,6 +21,10 @@ dependencies = [
 Homepage = "https://github.com/Inasayang/musictransfer"
 Repository = "https://github.com/Inasayang/musictransfer"
 
+[project.scripts]
+musictransfer = "musictransfer.__main__:main"
+start = "musictransfer.run:main"
+
 [tool.pdm]
 distribution = true
 
