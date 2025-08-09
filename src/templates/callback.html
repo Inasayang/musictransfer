@@ -16,5 +16,23 @@
             <a href="/" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">Return to Main Page</a>
         </div>
     </div>
+    <script>
+        // Close the popup window automatically after 2 seconds
+        window.onload = function() {
+            // Try to close the window (this will work if the window was opened by window.open)
+            setTimeout(function() {
+                window.close();
+                
+                // If window.close() doesn't work (due to browser security restrictions),
+                // show a message to the user
+                setTimeout(function() {
+                    if (!window.closed) {
+                        document.querySelector('p:nth-child(3)').innerHTML = 
+                            'Authentication completed! Please close this window manually and return to the main application.';
+                    }
+                }, 1000);
+            }, 2000);
+        };
+    </script>
 </body>
 </html>

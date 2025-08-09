@@ -32,5 +32,18 @@
             <a href="/" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">Return to Main Page</a>
         </div>
     </div>
+    <script>
+        // Show a message to the user about the error, but don't automatically close
+        // as they may want to read the error message
+        window.onload = function() {
+            // Add a message after 10 seconds if the user hasn't closed the window
+            setTimeout(function() {
+                const messageElement = document.createElement('p');
+                messageElement.className = 'text-sm text-gray-500 mt-4';
+                messageElement.innerHTML = 'Please close this window manually and return to the main application.';
+                document.querySelector('.container').appendChild(messageElement);
+            }, 10000);
+        };
+    </script>
 </body>
 </html>
