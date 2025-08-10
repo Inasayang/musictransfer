@@ -29,6 +29,24 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 static_dir = os.path.join(os.path.dirname(__file__), 'static')
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
+# Serve built frontend files from the frontend/dist directory
+frontend_dist_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
+if os.path.exists(frontend_dist_dir):
+    from flask import send_from_directory
+    
+    @app.route('/assets/<path:filename>')
+    def frontend_assets(filename):
+        return send_from_directory(os.path.join(frontend_dist_dir, 'assets'), filename)
+    
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def frontend(path):
+        # If the path is a file that exists in the dist directory, serve it
+        if path and os.path.exists(os.path.join(frontend_dist_dir, path)):
+            return send_from_directory(frontend_dist_dir, path)
+        # Otherwise, serve index.html for client-side routing
+        return send_from_directory(frontend_dist_dir, 'index.html')
+
 # Configure session
 # app.config['SESSION_TYPE'] = 'filesystem'
 # app.config['SESSION_FILE_DIR'] = './sessions'
@@ -54,12 +72,13 @@ YOUTUBE_CLIENT_SECRET = Config.YOUTUBE_CLIENT_SECRET
 YOUTUBE_API_KEY = Config.YOUTUBE_API_KEY
 REDIRECT_URI = Config.REDIRECT_URI
 
-@app.route('/')
-def index():
-    """
-    Home page
-    """
-    return render_template('index.html')
+# This route is now handled by the frontend function above
+# @app.route('/')
+# def index():
+#     """
+#     Home page
+#     """
+#     return render_template('index.html')
 
 @app.route('/auth/spotify')
 def auth_spotify():

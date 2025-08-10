@@ -1,0 +1,17 @@
+html {
+  font-size: 80%; /* 15px / 16px = 0.9375 */
+}
+
+@import 'tailwindcss';
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
+
+.select, .select-bordered {
+  min-height: 3rem; /* Ensure a minimum height */
+  padding-top: 0.75rem; /* Adjust padding */
+  padding-bottom: 0.75rem; /* Adjust padding */
+  line-height: 1.5; /* Standard line height */
+  display: flex; /* Use flexbox for vertical alignment */
+  align-items: center; /* Center content vertically */
+}
