@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authentication Complete</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-br from-blue-500 to-purple-600 min-h-screen font-sans">
@@ -12,27 +11,36 @@
         <div class="bg-white rounded-xl shadow-lg p-8 md:p-12 text-center max-w-2xl mx-auto mt-10">
             <h1 class="text-3xl md:text-4xl font-bold text-green-600 mb-6">✅ Authentication Successful</h1>
             <p class="text-xl text-gray-700 mb-4">{{ platform }} platform authentication has been completed.</p>
-            <p class="text-lg text-gray-600 mb-8">You can close this window and return to the main application.</p>
-            <a href="/" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">Return to Main Page</a>
+            <p class="text-lg text-gray-600 mb-8">This window will close automatically. Return to the main application.</p>
+            <button onclick="closeWindow()" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">Close Window</button>
         </div>
     </div>
     <script>
-        // Close the popup window automatically after 2 seconds
+        // Notify the parent window and close the popup window automatically
         window.onload = function() {
-            // Try to close the window (this will work if the window was opened by window.open)
+            // Notify parent window that authentication is complete
+            if (window.opener) {
+                window.opener.postMessage({type: 'auth_complete'}, '*');
+            }
+            
+            // Try to close the window automatically after a short delay
             setTimeout(function() {
-                window.close();
-                
-                // If window.close() doesn't work (due to browser security restrictions),
-                // show a message to the user
-                setTimeout(function() {
-                    if (!window.closed) {
-                        document.querySelector('p:nth-child(3)').innerHTML = 
-                            'Authentication completed! Please close this window manually and return to the main application.';
-                    }
-                }, 1000);
-            }, 2000);
+                closeWindow();
+            }, 3000);
         };
+        
+        // Function to close the window
+        function closeWindow() {
+            window.close();
+            
+            // If window.close() doesn't work (due to browser security restrictions),
+            // update the message to inform the user
+            if (!window.closed) {
+                document.querySelector('p:nth-child(3)').innerHTML = 
+                    'Authentication completed! Please close this window manually and return to the main application.';
+                document.querySelector('button').innerHTML = 'Close Window';
+            }
+        }
     </script>
 </body>
 </html>

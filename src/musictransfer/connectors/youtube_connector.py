@@ -360,6 +360,10 @@ class YouTubeMusicConnector:
             "maxResults": max_results
         }
         
+        # Add API key if available
+        if self.api_key:
+            params["key"] = self.api_key
+        
         response = self._make_authenticated_request("GET", url, params=params)
         return response.json().get("items", [])
 

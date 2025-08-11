@@ -76,7 +76,13 @@ const App: React.FC = () => {
     setError(null)
     
     fetch(`/api/playlists?platform=${selectedPlatform}`)
-      .then(response => response.json())
+      .then(response => {
+        // Check if response is ok
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
         if (data.error) {
           setError(data.error)
@@ -87,7 +93,17 @@ const App: React.FC = () => {
         setLoadingPlaylists(false)
       })
       .catch(error => {
-        setError(error.message)
+        console.error('Failed to load playlists:', error);
+        // Provide a more user-friendly error message
+        if (error.message.includes('401')) {
+          setError('Authentication required. Please re-authenticate with the platform.');
+        } else if (error.message.includes('500')) {
+          setError('Server error occurred. Please try again later.');
+        } else if (error.message.includes('Failed to fetch')) {
+          setError('Network error. Please check your connection and try again.');
+        } else {
+          setError(error.message || 'Failed to load playlists. Please try again.');
+        }
         setPlaylists([])
         setLoadingPlaylists(false)
       })
@@ -163,17 +179,74 @@ const App: React.FC = () => {
 
   // Handle Spotify authentication
   const handleSpotifyAuth = () => {
-    window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600')
+    const popup = window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600')
+    
+    // Listen for message from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'auth_complete') {
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    
+    // Poll for popup closure as fallback
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(checkClosed)
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+      }
+    }, 1000)
   }
 
   // Handle Spotify re-authentication
   const handleSpotifyReauth = () => {
-    window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600')
+    const popup = window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600')
+    
+    // Listen for message from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'auth_complete') {
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    
+    // Poll for popup closure as fallback
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(checkClosed)
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+      }
+    }, 1000)
   }
 
   // Handle YouTube authentication
   const handleYoutubeAuth = () => {
-    window.open('/auth/youtube', 'YouTube Authentication', 'width=600,height=600')
+    const popup = window.open('/auth/youtube', 'YouTube Authentication', 'width=600,height=600')
+    
+    // Listen for message from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'auth_complete') {
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    
+    // Poll for popup closure as fallback
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(checkClosed)
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+      }
+    }, 1000)
   }
 
   // Handle YouTube re-authentication
@@ -191,14 +264,52 @@ const App: React.FC = () => {
       } else {
         // Refresh failed, need to re-authenticate manually
         alert('Automatic refresh failed. Opening manual authentication window...')
-        window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600')
+        const popup = window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600')
+        
+        // Listen for message from popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'auth_complete') {
+            window.removeEventListener('message', handleMessage)
+            setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+          }
+        }
+        
+        window.addEventListener('message', handleMessage)
+        
+        // Poll for popup closure as fallback
+        const checkClosed = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(checkClosed)
+            window.removeEventListener('message', handleMessage)
+            setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+          }
+        }, 1000)
       }
     })
     .catch(err => {
       console.error('Failed to refresh YouTube authentication:', err)
       // If refresh request fails, proceed with manual re-authentication
       alert('Automatic refresh failed. Opening manual authentication window...')
-      window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600')
+      const popup = window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600')
+      
+      // Listen for message from popup
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'auth_complete') {
+          window.removeEventListener('message', handleMessage)
+          setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+        }
+      }
+      
+      window.addEventListener('message', handleMessage)
+      
+      // Poll for popup closure as fallback
+      const checkClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkClosed)
+          window.removeEventListener('message', handleMessage)
+          setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
+        }
+      }, 1000)
     })
   }
 

@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Dict, List
 
-from musictransfer.models import Playlist, Track
+from ..models import Playlist, Track
 
 
 class DataConverter:

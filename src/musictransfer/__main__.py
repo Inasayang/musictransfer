@@ -1,17 +1,14 @@
 import os
 import webbrowser
+import uvicorn
 
-from musictransfer.app import app
+from .app import app
 
-
-def main():
-    # Only open browser if this is not a reload (Flask debug mode can cause reloads)
-    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+if __name__ == "__main__":
+    # Only open browser if this is not a reload
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
         # Open application in default browser
         webbrowser.open("http://127.0.0.1:5000")
 
-    # Start Flask application
-    app.run(debug=True, port=5000)
-
-if __name__ == "__main__":
-    main()
+    # Start FastAPI application with uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=5000, log_level="info")

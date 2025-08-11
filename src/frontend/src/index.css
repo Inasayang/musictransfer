@@ -1,5 +1,5 @@
 html {
-  font-size: 80%; /* 15px / 16px = 0.9375 */
+  font-size: 80%;
 }
 
 @import 'tailwindcss';

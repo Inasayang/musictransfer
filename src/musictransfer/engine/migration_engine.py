@@ -1,11 +1,11 @@
 import time
 import logging
 from typing import Optional, Callable
-from musictransfer.models import Playlist
-from musictransfer.connectors.spotify_connector import SpotifyConnector
-from musictransfer.connectors.youtube_connector import YouTubeMusicConnector
-from musictransfer.converters.data_converter import DataConverter
-from musictransfer.utils.error_handling import retry_with_backoff, handle_api_errors, RateLimiter
+from ..models import Playlist
+from ..connectors.spotify_connector import SpotifyConnector
+from ..connectors.youtube_connector import YouTubeMusicConnector
+from ..converters.data_converter import DataConverter
+from ..utils.error_handling import retry_with_backoff, handle_api_errors, RateLimiter
 
 
 class MigrationEngine:
