@@ -38,9 +38,5 @@ dev = [
     "pytest>=8.4.1",
 ]
 
-[tool.ruff]
-# Disable the C0114 rule (missing module docstring)
-lint.ignore = ["D100"]
-
 [tool.pylint.messages_control]
-disable = "C0114"
+disable = "C0114,C0301"

@@ -109,7 +109,8 @@ class YouTubeMusicConnector:
     
     def is_authenticated(self) -> bool:
         """
-        Check if the connector is properly authenticated with both access and refresh tokens
+        Check if the connector is properly authenticated with access token
+        Refresh token is preferred but not required for basic operations
         
         Returns:
             bool: True if properly authenticated, False otherwise
@@ -119,14 +120,12 @@ class YouTubeMusicConnector:
         logging.info("Access token: %s", self.access_token)
         logging.info("Refresh token: %s", self.refresh_token)
         
-        # Check if we have both access and refresh tokens
+        # Check if we have access token (refresh token is optional for basic operations)
         has_access_token = bool(self.access_token)
-        has_refresh_token = bool(self.refresh_token)
         
         logging.info("Has access token: %s", has_access_token)
-        logging.info("Has refresh token: %s", has_refresh_token)
         
-        return has_access_token and has_refresh_token
+        return has_access_token
     
     def refresh_access_token(self) -> Dict:
         """

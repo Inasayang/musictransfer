@@ -12,6 +12,12 @@ interface AuthStatus {
   youtube: boolean
 }
 
+interface Alert {
+  type: 'success' | 'error'
+  message: string
+  visible: boolean
+}
+
 const App: React.FC = () => {
   // State management
   const [authStatus, setAuthStatus] = useState<AuthStatus>({ spotify: false, youtube: false })
@@ -25,19 +31,20 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [loadingPlaylists, setLoadingPlaylists] = useState<boolean>(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('light'); // Add theme state
+  const [alert, setAlert] = useState<Alert>({ type: 'success', message: '', visible: false });
 
   // Initialize theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     const initialTheme = (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) ? 'dark' : 'light';
     setTheme(initialTheme); // Set theme state
     document.documentElement.setAttribute('data-theme', initialTheme);
-    
+
     // Update auth status
     updateAuthStatus();
-    
+
     // Set up periodic auth status updates
     const interval = setInterval(updateAuthStatus, 5000);
     return () => clearInterval(interval);
@@ -71,10 +78,10 @@ const App: React.FC = () => {
   // Load playlists
   const loadPlaylists = () => {
     if (!selectedPlatform) return
-    
+
     setLoadingPlaylists(true)
     setError(null)
-    
+
     fetch(`/api/playlists?platform=${selectedPlatform}`)
       .then(response => {
         // Check if response is ok
@@ -119,13 +126,13 @@ const App: React.FC = () => {
   const startMigration = () => {
     const playlistId = selectedPlaylistId || playlistIdInput
     if (!playlistId) return
-    
+
     // Reset progress display
     setProgress(0)
     setProgressText('Starting migration...')
     setMigrationResult(null)
     setError(null)
-    
+
     // Send migration request
     fetch('/api/migrate', {
       method: 'POST',
@@ -134,19 +141,19 @@ const App: React.FC = () => {
       },
       body: JSON.stringify({ playlist_id: playlistId })
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.error) {
-        setError(data.error)
-        return
-      }
-      
-      // Start polling migration status
-      pollMigrationStatus()
-    })
-    .catch(error => {
-      setError(error.message)
-    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          setError(data.error)
+          return
+        }
+
+        // Start polling migration status
+        pollMigrationStatus()
+      })
+      .catch(error => {
+        setError(error.message)
+      })
   }
 
   // Poll migration status
@@ -158,11 +165,11 @@ const App: React.FC = () => {
           // Update progress bar
           setProgress(data.progress)
           setProgressText(data.description)
-          
+
           // Check if completed
           if (!data.running) {
             clearInterval(interval)
-            
+
             if (data.error) {
               setError(data.error)
             } else {
@@ -180,7 +187,7 @@ const App: React.FC = () => {
   // Handle Spotify authentication
   const handleSpotifyAuth = () => {
     const popup = window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600')
-    
+
     // Listen for message from popup
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'auth_complete') {
@@ -188,9 +195,9 @@ const App: React.FC = () => {
         setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
       }
     }
-    
+
     window.addEventListener('message', handleMessage)
-    
+
     // Poll for popup closure as fallback
     const checkClosed = setInterval(() => {
       if (popup?.closed) {
@@ -204,7 +211,7 @@ const App: React.FC = () => {
   // Handle Spotify re-authentication
   const handleSpotifyReauth = () => {
     const popup = window.open('/auth/spotify', 'Spotify Authentication', 'width=600,height=600')
-    
+
     // Listen for message from popup
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'auth_complete') {
@@ -212,9 +219,9 @@ const App: React.FC = () => {
         setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
       }
     }
-    
+
     window.addEventListener('message', handleMessage)
-    
+
     // Poll for popup closure as fallback
     const checkClosed = setInterval(() => {
       if (popup?.closed) {
@@ -228,7 +235,7 @@ const App: React.FC = () => {
   // Handle YouTube authentication
   const handleYoutubeAuth = () => {
     const popup = window.open('/auth/youtube', 'YouTube Authentication', 'width=600,height=600')
-    
+
     // Listen for message from popup
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'auth_complete') {
@@ -236,9 +243,9 @@ const App: React.FC = () => {
         setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
       }
     }
-    
+
     window.addEventListener('message', handleMessage)
-    
+
     // Poll for popup closure as fallback
     const checkClosed = setInterval(() => {
       if (popup?.closed) {
@@ -249,68 +256,93 @@ const App: React.FC = () => {
     }, 1000)
   }
 
-  // Handle YouTube re-authentication
-  const handleYoutubeReauth = () => {
+  // Handle YouTube token refresh
+  const handleYoutubeTokenRefresh = () => {
     // First try to refresh the token automatically
     fetch('/api/auth/youtube/refresh', {
       method: 'POST'
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        // Refresh successful
-        alert('YouTube authentication refreshed successfully!')
-        updateAuthStatus() // Update the UI to show connected status
-      } else {
-        // Refresh failed, need to re-authenticate manually
-        alert('Automatic refresh failed. Opening manual authentication window...')
-        const popup = window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600')
-        
-        // Listen for message from popup
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data.type === 'auth_complete') {
-            window.removeEventListener('message', handleMessage)
-            setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
-          }
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Refresh successful
+          showAlert('success', 'YouTube authentication refreshed successfully!')
+          updateAuthStatus() // Update the UI to show connected status
+        } else {
+          // Refresh failed
+          showAlert('error', 'Automatic refresh failed. Please re-authenticate manually.')
         }
-        
-        window.addEventListener('message', handleMessage)
-        
-        // Poll for popup closure as fallback
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', handleMessage)
-            setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
-          }
-        }, 1000)
+      })
+      .catch(err => {
+        console.error('Failed to refresh YouTube authentication:', err)
+        // If refresh request fails
+        showAlert('error', 'Automatic refresh failed. Please re-authenticate manually.')
+      })
+  }
+
+  // Handle YouTube re-authentication
+  const handleYoutubeReauth = () => {
+    // Directly open the re-authentication window
+    const popup = window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600')
+
+    // Listen for message from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'auth_complete') {
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
       }
-    })
-    .catch(err => {
-      console.error('Failed to refresh YouTube authentication:', err)
-      // If refresh request fails, proceed with manual re-authentication
-      alert('Automatic refresh failed. Opening manual authentication window...')
-      const popup = window.open('/api/auth/youtube/force', 'YouTube Authentication', 'width=600,height=600')
-      
-      // Listen for message from popup
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data.type === 'auth_complete') {
-          window.removeEventListener('message', handleMessage)
-          setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
-        }
+    }
+
+    window.addEventListener('message', handleMessage)
+
+    // Poll for popup closure as fallback
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(checkClosed)
+        window.removeEventListener('message', handleMessage)
+        setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
       }
-      
-      window.addEventListener('message', handleMessage)
-      
-      // Poll for popup closure as fallback
-      const checkClosed = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(checkClosed)
-          window.removeEventListener('message', handleMessage)
-          setTimeout(updateAuthStatus, 1000) // Update auth status after popup closes
-        }
-      }, 1000)
+    }, 1000)
+  }
+
+  // Handle Spotify logout
+  const handleSpotifyLogout = () => {
+    fetch('/api/auth/spotify/logout', {
+      method: 'POST'
     })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showAlert('success', 'Logged out from Spotify successfully')
+          updateAuthStatus() // Update the UI to show disconnected status
+        } else {
+          showAlert('error', 'Failed to logout from Spotify')
+        }
+      })
+      .catch(err => {
+        console.error('Failed to logout from Spotify:', err)
+        showAlert('error', 'Failed to logout from Spotify')
+      })
+  }
+
+  // Handle YouTube logout
+  const handleYoutubeLogout = () => {
+    fetch('/api/auth/youtube/logout', {
+      method: 'POST'
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showAlert('success', 'Logged out from YouTube successfully')
+          updateAuthStatus() // Update the UI to show disconnected status
+        } else {
+          showAlert('error', 'Failed to logout from YouTube')
+        }
+      })
+      .catch(err => {
+        console.error('Failed to logout from YouTube:', err)
+        showAlert('error', 'Failed to logout from YouTube')
+      })
   }
 
   // Check if migration button should be enabled
@@ -319,8 +351,37 @@ const App: React.FC = () => {
     return playlistId && authStatus.spotify && authStatus.youtube
   }
 
+  // Show alert function
+  const showAlert = (type: 'success' | 'error', message: string) => {
+    setAlert({ type, message, visible: true });
+    // Auto hide alert after 5 seconds
+    setTimeout(() => {
+      setAlert(prevAlert => ({ ...prevAlert, visible: false }));
+    }, 5000);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-base-100 text-base-content font-sans transition-colors duration-300">
+      {/* Alert */}
+      {alert.visible && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className={`alert alert-${alert.type} shadow-xl z-10 max-w-md mx-4 pointer-events-auto`}>
+            <div>
+              {alert.type === 'success' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              <span>{alert.message}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <header className="border-b border-base-300 bg-base-100 sticky top-0 z-10 backdrop-blur-md bg-opacity-90">
         <div className="container mx-auto px-4 py-4">
@@ -332,7 +393,7 @@ const App: React.FC = () => {
               <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">MusicTransfer</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <button 
+              <button
                 onClick={toggleTheme}
                 className="p-2 rounded-xl hover:bg-base-200 transition-all duration-300 transform hover:scale-105"
                 aria-label="Toggle theme"
@@ -379,18 +440,26 @@ const App: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex space-x-3">
+                  <div className="flex space-x-2">
                     {authStatus.spotify ? (
-                      <button 
-                        onClick={handleSpotifyReauth}
-                        className="btn btn-soft btn-accent"
-                      >
-                        Re-authenticate
-                      </button>
+                      <>
+                        <button
+                          onClick={handleSpotifyReauth}
+                          className="btn btn-soft btn-accent btn-sm"
+                        >
+                          Re-auth
+                        </button>
+                        <button
+                          onClick={handleSpotifyLogout}
+                          className="btn btn-soft btn-error btn-sm"
+                        >
+                          Logout
+                        </button>
+                      </>
                     ) : (
-                      <button 
+                      <button
                         onClick={handleSpotifyAuth}
-                        className="btn btn-soft btn-primary"
+                        className="btn btn-soft btn-primary btn-sm"
                       >
                         Connect
                       </button>
@@ -407,18 +476,33 @@ const App: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex space-x-3">
+                  <div className="flex space-x-2">
                     {authStatus.youtube ? (
-                      <button 
-                        onClick={handleYoutubeReauth}
-                        className="btn btn-soft btn-accent"
-                      >
-                        Re-authenticate
-                      </button>
+                      <>
+
+                        <button
+                          onClick={handleYoutubeReauth}
+                          className="btn btn-soft btn-accent btn-sm"
+                        >
+                          Re-auth
+                        </button>
+                        <button
+                          onClick={handleYoutubeTokenRefresh}
+                          className="btn btn-soft btn-accent btn-sm"
+                        >
+                          Refresh
+                        </button>
+                        <button
+                          onClick={handleYoutubeLogout}
+                          className="btn btn-soft btn-error btn-sm"
+                        >
+                          Logout
+                        </button>
+                      </>
                     ) : (
-                      <button 
+                      <button
                         onClick={handleYoutubeAuth}
-                        className="btn btn-soft btn-primary"
+                        className="btn btn-soft btn-primary btn-sm"
                       >
                         Connect
                       </button>
@@ -433,7 +517,7 @@ const App: React.FC = () => {
               <h2 className="text-2xl font-bold mb-6 text-base-content">Migrate Playlist</h2>
               <div className="space-y-7">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <select 
+                  <select
                     value={selectedPlatform}
                     onChange={handlePlatformChange}
                     className="select select-bordered flex-1 rounded-xl py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-base-100 border-base-300 shadow-soft leading-normal"
@@ -442,7 +526,7 @@ const App: React.FC = () => {
                     <option value="spotify">Spotify</option>
                     <option value="youtube">YouTube Music</option>
                   </select>
-                  <button 
+                  <button
                     onClick={loadPlaylists}
                     disabled={!selectedPlatform}
                     className={`btn px-6 py-3 font-medium transition-all shadow-soft ${selectedPlatform ? 'btn-soft btn-primary' : 'btn-disabled'}`}
@@ -450,7 +534,7 @@ const App: React.FC = () => {
                     Load Playlists
                   </button>
                 </div>
-                
+
                 <div className="border border-base-300 rounded-xl max-h-72 overflow-y-auto p-2 bg-base-100 shadow-soft">
                   <ul className="space-y-2">
                     {loadingPlaylists ? (
@@ -463,7 +547,7 @@ const App: React.FC = () => {
                     ) : error && error.includes('YouTube authentication has expired') ? (
                       <li className="p-6 text-center bg-error/10 rounded-xl border border-error/30">
                         <p className="text-error font-medium mb-3">Failed to load: {error}</p>
-                        <button 
+                        <button
                           onClick={handleYoutubeReauth}
                           className="btn bg-gradient-to-r from-primary to-primary-focus text-primary-content rounded-xl px-5 py-2 font-medium transition-all duration-300 transform hover:scale-105 shadow-soft"
                         >
@@ -481,7 +565,7 @@ const App: React.FC = () => {
                       </li>
                     ) : (
                       playlists.map(playlist => (
-                        <li 
+                        <li
                           key={playlist.id}
                           className={`p-4 cursor-pointer transition-all duration-300 rounded-xl border-2 ${selectedPlaylistId === playlist.id ? 'border-primary bg-gradient-to-r from-primary/10 to-accent/10' : 'border-transparent hover:border-base-300 hover:bg-base-300'} shadow-soft`}
                           onClick={() => selectPlaylist(playlist.id)}
@@ -496,16 +580,16 @@ const App: React.FC = () => {
                     )}
                   </ul>
                 </div>
-                
+
                 <div className="flex flex-col gap-4">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={playlistIdInput}
                     onChange={(e) => setPlaylistIdInput(e.target.value)}
-                    placeholder="Enter playlist ID or select from above" 
+                    placeholder="Enter playlist ID or select from above"
                     className="input input-bordered w-full rounded-xl py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-base-100 border-base-300 shadow-soft"
                   />
-                  <button 
+                  <button
                     onClick={startMigration}
                     disabled={!isMigrateButtonEnabled()}
                     className={`btn px-6 py-3 font-medium text-lg shadow-soft ${isMigrateButtonEnabled() ? 'btn-soft btn-accent' : 'btn-disabled'}`}
@@ -522,7 +606,7 @@ const App: React.FC = () => {
             <h2 className="text-2xl font-bold mb-6 text-base-content">Migration Progress</h2>
             <div className="mb-6">
               <div className="w-full bg-base-300 rounded-full h-5 overflow-hidden">
-                <div 
+                <div
                   className="bg-gradient-to-r from-primary via-secondary to-accent h-5 rounded-full transition-all duration-700 ease-in-out flex items-center justify-end relative"
                   style={{ width: `${progress}%` }}
                 >
@@ -554,7 +638,7 @@ const App: React.FC = () => {
                   {error}
                 </p>
                 {error.includes('YouTube authentication has expired') && (
-                  <button 
+                  <button
                     onClick={handleYoutubeReauth}
                     className="mt-4 btn bg-gradient-to-r from-primary to-primary-focus text-primary-content rounded-xl px-5 py-2 font-medium transition-all duration-300 transform hover:scale-105 shadow-soft"
                   >

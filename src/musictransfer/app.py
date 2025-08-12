@@ -194,6 +194,7 @@ async def callback(request: Request, code: str = None, state: str = None):
             request.session['youtube_authenticated'] = True
             request.session['youtube_token_info'] = token_info
             request.session.pop('auth_in_progress', None)  # Clear authentication in progress flag
+            request.session.pop('youtube_reauth_in_progress', None)  # Clear re-authentication flag
             logging.info("YouTube authentication successful")
             return templates.TemplateResponse('callback.html', {'request': request, 'platform': 'YouTube Music'})
         else:
@@ -312,15 +313,15 @@ def get_youtube_connector(request: Request):
 @app.get('/api/auth/youtube/force')
 async def force_youtube_auth(request: Request):
     """
-    Force re-authentication with YouTube by clearing session and redirecting to auth endpoint
+    Force re-authentication with YouTube by redirecting to auth endpoint
+    Keep current authentication status until re-auth is successful
     """
-    # Clear YouTube authentication from session
-    request.session.pop('youtube_authenticated', None)
-    request.session.pop('youtube_token_info', None)
-    global YOUTUBE_CONNECTOR
-    YOUTUBE_CONNECTOR = None
+    # Don't clear YouTube authentication from session here
+    # Keep current authentication status until re-auth is successful
+    logging.info("Forced YouTube re-authentication initiated - keeping current session")
     
-    logging.info("Forced YouTube re-authentication - cleared session and connector")
+    # Set a flag to indicate re-authentication is in progress
+    request.session['youtube_reauth_in_progress'] = True
     
     # Redirect to YouTube auth endpoint
     return RedirectResponse(url='/auth/youtube')
@@ -554,16 +555,61 @@ async def get_migration_status():
 async def get_auth_status(request: Request):
     """
     Get authentication status
+    During re-authentication, keep showing authenticated status until re-auth is complete
     """
     spotify_auth = request.session.get('spotify_authenticated', False)
     youtube_auth = request.session.get('youtube_authenticated', False)
     
-    logging.info("Authentication status check: Spotify=%s, YouTube=%s", spotify_auth, youtube_auth)
+    # During YouTube re-authentication, keep showing authenticated status
+    # unless the re-authentication has explicitly failed
+    youtube_reauth_in_progress = request.session.get('youtube_reauth_in_progress', False)
+    
+    logging.info("Authentication status check: Spotify=%s, YouTube=%s, YouTube Re-auth in progress=%s", 
+                 spotify_auth, youtube_auth, youtube_reauth_in_progress)
     
     return JSONResponse(content={
         'spotify': spotify_auth,
-        'youtube': youtube_auth
+        'youtube': youtube_auth  # Keep showing current status during re-auth
     })
+
+
+@app.post('/api/auth/spotify/logout')
+async def logout_spotify(request: Request):
+    """
+    Logout from Spotify - clear session and connector
+    """
+    global SPOTIFY_CONNECTOR
+    
+    # Clear Spotify authentication from session
+    request.session.pop('spotify_authenticated', None)
+    request.session.pop('spotify_token_info', None)
+    
+    # Clear global connector
+    SPOTIFY_CONNECTOR = None
+    
+    logging.info("Spotify logout successful")
+    
+    return JSONResponse(content={'success': True, 'message': 'Logged out from Spotify successfully'})
+
+
+@app.post('/api/auth/youtube/logout')
+async def logout_youtube(request: Request):
+    """
+    Logout from YouTube - clear session and connector
+    """
+    global YOUTUBE_CONNECTOR
+    
+    # Clear YouTube authentication from session
+    request.session.pop('youtube_authenticated', None)
+    request.session.pop('youtube_token_info', None)
+    request.session.pop('youtube_reauth_in_progress', None)
+    
+    # Clear global connector
+    YOUTUBE_CONNECTOR = None
+    
+    logging.info("YouTube logout successful")
+    
+    return JSONResponse(content={'success': True, 'message': 'Logged out from YouTube successfully'})
 
 # Frontend routes (must be defined after all API routes)
 if os.path.exists(frontend_dist_dir):
