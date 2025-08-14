@@ -40,6 +40,10 @@ const App: React.FC = () => {
 
     const initialTheme = (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) ? 'dark' : 'light';
     setTheme(initialTheme); // Set theme state
+    
+    // Apply theme class to document
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(initialTheme);
     document.documentElement.setAttribute('data-theme', initialTheme);
 
     // Update auth status
@@ -66,6 +70,10 @@ const App: React.FC = () => {
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme); // Update theme state
+    
+    // Apply theme class to document
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
   };
@@ -361,7 +369,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-base-100 text-base-content font-sans transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-base-100 font-sans transition-colors duration-300">
       {/* Alert */}
       {alert.visible && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
@@ -388,7 +396,7 @@ const App: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-primary to-accent flex items-center justify-center shadow-soft">
-                <span className="text-white font-bold text-lg">MT</span>
+                <span className="font-bold text-lg" style={{ color: 'hsl(var(--primary-foreground))' }}>MT</span>
               </div>
               <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">MusicTransfer</h1>
             </div>
@@ -417,25 +425,25 @@ const App: React.FC = () => {
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-20">
-            <h1 className="text-3xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent leading-normal">
+            <h1 className="text-2xl md:text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent leading-normal">
               🎵 Music Playlist Migration
             </h1>
-            <p className="text-lg md:text-xl text-base-content/80 max-w-3xl mx-auto font-light leading-normal">
+            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto font-light leading-normal">
               Seamlessly migrate your playlists between Spotify and YouTube Music with our fast and reliable tool.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Authentication Card */}
-            <div className="bg-base-200 rounded-xl border border-base-300 p-8 shadow-soft-xl hover:shadow-soft-xl transition-all duration-500 transform hover:-translate-y-1">
-              <h2 className="text-2xl font-bold mb-6 text-base-content">Platform Authentication</h2>
+            <div className="card p-8 shadow-soft hover:shadow-soft-xl transition-all duration-500 transform hover:-translate-y-1">
+              <h2 className="text-lg font-bold mb-6">Platform Authentication</h2>
               <div className="space-y-5">
-                <div className="flex items-center justify-between p-5 bg-base-300 rounded-xl transition-all duration-300 hover:shadow-soft-lg">
+                <div className="flex items-center justify-between p-5 rounded-xl transition-all duration-300 hover:shadow-soft-lg">
                   <div className="flex items-center space-x-4">
                     <div className={`w-4 h-4 rounded-full ${authStatus.spotify ? 'bg-success animate-pulse' : 'bg-error'}`}></div>
                     <div>
-                      <h3 className="font-semibold text-lg">Spotify</h3>
-                      <p className="text-sm text-base-content/70">
+                      <h3 className="font-semibold text-base">Spotify</h3>
+                      <p className="text-sm text-muted-foreground">
                         {authStatus.spotify ? 'Connected' : 'Not Authenticated'}
                       </p>
                     </div>
@@ -445,13 +453,13 @@ const App: React.FC = () => {
                       <>
                         <button
                           onClick={handleSpotifyReauth}
-                          className="btn btn-soft btn-accent btn-sm"
+                          className="btn btn-secondary btn-sm"
                         >
                           Re-auth
                         </button>
                         <button
                           onClick={handleSpotifyLogout}
-                          className="btn btn-soft btn-error btn-sm"
+                          className="btn btn-destructive btn-sm"
                         >
                           Logout
                         </button>
@@ -459,19 +467,19 @@ const App: React.FC = () => {
                     ) : (
                       <button
                         onClick={handleSpotifyAuth}
-                        className="btn btn-soft btn-primary btn-sm"
+                        className="btn btn-primary btn-sm"
                       >
                         Connect
                       </button>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-5 bg-base-300 rounded-xl transition-all duration-300 hover:shadow-soft-lg">
+                <div className="flex items-center justify-between p-5 rounded-xl transition-all duration-300 hover:shadow-soft-lg">
                   <div className="flex items-center space-x-4">
                     <div className={`w-4 h-4 rounded-full ${authStatus.youtube ? 'bg-success animate-pulse' : 'bg-error'}`}></div>
                     <div>
-                      <h3 className="font-semibold text-lg">YouTube Music</h3>
-                      <p className="text-sm text-base-content/70">
+                      <h3 className="font-semibold text-base">YouTube Music</h3>
+                      <p className="text-sm text-muted-foreground">
                         {authStatus.youtube ? 'Connected' : 'Not Authenticated'}
                       </p>
                     </div>
@@ -482,19 +490,19 @@ const App: React.FC = () => {
 
                         <button
                           onClick={handleYoutubeReauth}
-                          className="btn btn-soft btn-accent btn-sm"
+                          className="btn btn-secondary btn-sm"
                         >
                           Re-auth
                         </button>
                         <button
                           onClick={handleYoutubeTokenRefresh}
-                          className="btn btn-soft btn-accent btn-sm"
+                          className="btn btn-secondary btn-sm"
                         >
                           Refresh
                         </button>
                         <button
                           onClick={handleYoutubeLogout}
-                          className="btn btn-soft btn-error btn-sm"
+                          className="btn btn-destructive btn-sm"
                         >
                           Logout
                         </button>
@@ -502,7 +510,7 @@ const App: React.FC = () => {
                     ) : (
                       <button
                         onClick={handleYoutubeAuth}
-                        className="btn btn-soft btn-primary btn-sm"
+                        className="btn btn-primary btn-sm"
                       >
                         Connect
                       </button>
@@ -513,14 +521,14 @@ const App: React.FC = () => {
             </div>
 
             {/* Migration Card */}
-            <div className="bg-base-200 rounded-xl border border-base-300 p-8 shadow-soft-xl hover:shadow-soft-xl transition-all duration-500 transform hover:-translate-y-1">
-              <h2 className="text-2xl font-bold mb-6 text-base-content">Migrate Playlist</h2>
+            <div className="card p-8 shadow-soft hover:shadow-soft-xl transition-all duration-500 transform hover:-translate-y-1">
+              <h2 className="text-lg font-bold mb-6">Migrate Playlist</h2>
               <div className="space-y-7">
                 <div className="flex flex-col sm:flex-row gap-4">
                   <select
                     value={selectedPlatform}
                     onChange={handlePlatformChange}
-                    className="select select-bordered flex-1 rounded-xl py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-base-100 border-base-300 shadow-soft leading-normal"
+                    className="select flex-1 rounded-xl py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary border shadow-soft leading-normal"
                   >
                     <option value="">Select Source Platform</option>
                     <option value="spotify">Spotify</option>
@@ -529,16 +537,16 @@ const App: React.FC = () => {
                   <button
                     onClick={loadPlaylists}
                     disabled={!selectedPlatform}
-                    className={`btn px-6 py-3 font-medium transition-all shadow-soft ${selectedPlatform ? 'btn-soft btn-primary' : 'btn-disabled'}`}
+                    className={`btn px-6 py-3 font-medium transition-all shadow-soft ${selectedPlatform ? 'btn-primary' : 'btn-disabled'}`}
                   >
                     Load Playlists
                   </button>
                 </div>
 
-                <div className="border border-base-300 rounded-xl max-h-72 overflow-y-auto p-2 bg-base-100 shadow-soft">
+                <div className="border rounded-xl max-h-72 overflow-y-auto p-2 shadow-soft">
                   <ul className="space-y-2">
                     {loadingPlaylists ? (
-                      <li className="p-6 text-center text-base-content/70">
+                      <li className="p-6 text-center text-muted-foreground">
                         <div className="flex justify-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                         </div>
@@ -549,7 +557,7 @@ const App: React.FC = () => {
                         <p className="text-error font-medium mb-3">Failed to load: {error}</p>
                         <button
                           onClick={handleYoutubeReauth}
-                          className="btn bg-gradient-to-r from-primary to-primary-focus text-primary-content rounded-xl px-5 py-2 font-medium transition-all duration-300 transform hover:scale-105 shadow-soft"
+                          className="btn btn-primary rounded-xl px-5 py-2 font-medium transition-all duration-300 transform hover:scale-105 shadow-soft"
                         >
                           Re-authenticate with YouTube
                         </button>
@@ -559,8 +567,8 @@ const App: React.FC = () => {
                         <p className="text-error font-medium">Failed to load: {error}</p>
                       </li>
                     ) : playlists.length === 0 ? (
-                      <li className="p-6 text-center text-base-content/70">
-                        <p className="text-lg">No playlists found</p>
+                      <li className="p-6 text-center text-muted-foreground">
+                        <p className="text-base">No playlists found</p>
                         <p className="text-sm mt-2">Connect to a platform and load playlists to get started</p>
                       </li>
                     ) : (
@@ -570,9 +578,9 @@ const App: React.FC = () => {
                           className={`p-4 cursor-pointer transition-all duration-300 rounded-xl border-2 ${selectedPlaylistId === playlist.id ? 'border-primary bg-gradient-to-r from-primary/10 to-accent/10' : 'border-transparent hover:border-base-300 hover:bg-base-300'} shadow-soft`}
                           onClick={() => selectPlaylist(playlist.id)}
                         >
-                          <h3 className="font-semibold text-lg">{playlist.name}</h3>
+                          <h3 className="font-semibold text-base">{playlist.name}</h3>
                           <div className="flex justify-between items-center mt-2">
-                            <p className="text-sm text-base-content/70">{playlist.track_count} songs</p>
+                            <p className="text-sm text-muted-foreground">{playlist.track_count} songs</p>
                             <span className="text-xs bg-base-300 px-2 py-1 rounded-lg">ID: {playlist.id.substring(0, 8)}...</span>
                           </div>
                         </li>
@@ -587,12 +595,12 @@ const App: React.FC = () => {
                     value={playlistIdInput}
                     onChange={(e) => setPlaylistIdInput(e.target.value)}
                     placeholder="Enter playlist ID or select from above"
-                    className="input input-bordered w-full rounded-xl py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary bg-base-100 border-base-300 shadow-soft"
+                    className="input w-full rounded-xl py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary border shadow-soft"
                   />
                   <button
                     onClick={startMigration}
                     disabled={!isMigrateButtonEnabled()}
-                    className={`btn px-6 py-3 font-medium text-lg shadow-soft ${isMigrateButtonEnabled() ? 'btn-soft btn-accent' : 'btn-disabled'}`}
+                    className={`btn px-6 py-3 font-medium text-base shadow-soft ${isMigrateButtonEnabled() ? 'btn-primary' : 'btn-disabled'}`}
                   >
                     Start Migration
                   </button>
@@ -602,10 +610,10 @@ const App: React.FC = () => {
           </div>
 
           {/* Progress Section */}
-          <div className="mt-12 bg-base-200 rounded-xl border border-base-300 p-8 shadow-soft-xl hover:shadow-soft-xl transition-all duration-500">
-            <h2 className="text-2xl font-bold mb-6 text-base-content">Migration Progress</h2>
+          <div className="mt-12 card p-8 shadow-soft hover:shadow-soft-xl transition-all duration-500">
+            <h2 className="text-lg font-bold mb-6">Migration Progress</h2>
             <div className="mb-6">
-              <div className="w-full bg-base-300 rounded-full h-5 overflow-hidden">
+              <div className="w-full rounded-full h-5 overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-primary via-secondary to-accent h-5 rounded-full transition-all duration-700 ease-in-out flex items-center justify-end relative"
                   style={{ width: `${progress}%` }}
@@ -614,33 +622,33 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="text-center text-base-content/80 text-lg min-h-[2rem] font-medium">{progressText}</div>
+            <div className="text-center text-muted-foreground text-base min-h-[2rem] font-medium">{progressText}</div>
             {migrationResult && (
               <div className="mt-6 p-6 rounded-xl bg-gradient-to-r from-success/10 to-secondary/10 border border-success/30 text-center shadow-soft">
-                <h3 className="text-2xl font-bold text-success mb-3">Migration Complete!</h3>
-                <p className="text-base-content mb-4 text-lg">
+                <h3 className="text-xl font-bold text-success mb-3">Migration Complete!</h3>
+                <p className="mb-4 text-base">
                   Your playlist has been successfully migrated to YouTube Music.
                 </p>
                 <div className="bg-base-100 p-4 rounded-xl inline-block shadow-soft">
-                  <p className="font-mono break-all text-base-content">
+                  <p className="font-mono break-all">
                     Playlist ID: <span className="font-bold text-secondary">{migrationResult}</span>
                   </p>
                 </div>
-                <p className="mt-4 text-base-content/80">
+                <p className="mt-4 text-muted-foreground">
                   You can view the new playlist in YouTube Music.
                 </p>
               </div>
             )}
             {error && !error.includes('YouTube authentication has expired') && (
               <div className="mt-6 p-6 rounded-xl bg-gradient-to-r from-error/10 to-red-100 border border-error/30 text-center shadow-soft">
-                <h3 className="text-2xl font-bold text-error mb-3">Error</h3>
-                <p className="text-base-content break-all text-lg">
+                <h3 className="text-xl font-bold text-error mb-3">Error</h3>
+                <p className="break-all text-base">
                   {error}
                 </p>
                 {error.includes('YouTube authentication has expired') && (
                   <button
                     onClick={handleYoutubeReauth}
-                    className="mt-4 btn bg-gradient-to-r from-primary to-primary-focus text-primary-content rounded-xl px-5 py-2 font-medium transition-all duration-300 transform hover:scale-105 shadow-soft"
+                    className="mt-4 btn btn-primary rounded-xl px-5 py-2 font-medium transition-all duration-300 transform hover:scale-105 shadow-soft"
                   >
                     Re-authenticate with YouTube
                   </button>
