@@ -1,4 +1,4 @@
-import { AlertState } from '../types'
+import type { AlertState } from '../types'
 
 interface AlertOverlayProps {
   alert: AlertState | null

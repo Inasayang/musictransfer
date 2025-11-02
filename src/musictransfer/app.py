@@ -276,10 +276,10 @@ def get_youtube_connector(request: Request):
         )
         # Restore token
         if isinstance(token_info, dict):
-            YOUTUBE_CONNECTOR.access_token = token_info.get('access_token')
-            YOUTUBE_CONNECTOR.refresh_token = token_info.get('refresh_token')
+            YOUTUBE_CONNECTOR.apply_token_info(token_info)
             logging.info("Restored tokens from dict. Access token: %s, Refresh token: %s", 
                         YOUTUBE_CONNECTOR.access_token, YOUTUBE_CONNECTOR.refresh_token)
+            logging.info("Restored token expiry: %s", getattr(YOUTUBE_CONNECTOR, 'token_expiry', None))
             # Check if connector is properly authenticated
             if not YOUTUBE_CONNECTOR.is_authenticated():
                 logging.warning("Restored YouTube connector not properly authenticated, forcing re-authentication")
@@ -291,17 +291,18 @@ def get_youtube_connector(request: Request):
             # If it's a JSON string, parse it
             try:
                 token_data = json.loads(token_info)
-                YOUTUBE_CONNECTOR.access_token = token_data.get('access_token')
-                YOUTUBE_CONNECTOR.refresh_token = token_data.get('refresh_token')
-                logging.info("Restored tokens from JSON string. Access token: %s, Refresh token: %s", 
-                            YOUTUBE_CONNECTOR.access_token, YOUTUBE_CONNECTOR.refresh_token)
-                # Check if connector is properly authenticated
-                if not YOUTUBE_CONNECTOR.is_authenticated():
-                    logging.warning("Restored YouTube connector not properly authenticated, forcing re-authentication")
-                    request.session.pop('youtube_authenticated', None)
-                    request.session.pop('youtube_token_info', None)
-                    YOUTUBE_CONNECTOR = None
-                    return None
+                if isinstance(token_data, dict):
+                    YOUTUBE_CONNECTOR.apply_token_info(token_data)
+                    logging.info("Restored tokens from JSON string. Access token: %s, Refresh token: %s", 
+                                YOUTUBE_CONNECTOR.access_token, YOUTUBE_CONNECTOR.refresh_token)
+                    logging.info("Restored token expiry: %s", getattr(YOUTUBE_CONNECTOR, 'token_expiry', None))
+                    # Check if connector is properly authenticated
+                    if not YOUTUBE_CONNECTOR.is_authenticated():
+                        logging.warning("Restored YouTube connector not properly authenticated, forcing re-authentication")
+                        request.session.pop('youtube_authenticated', None)
+                        request.session.pop('youtube_token_info', None)
+                        YOUTUBE_CONNECTOR = None
+                        return None
             except Exception as e:
                 logging.error("Failed to parse token_info as JSON: %s", str(e))
                 pass

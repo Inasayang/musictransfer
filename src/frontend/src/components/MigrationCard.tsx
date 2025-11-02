@@ -1,4 +1,4 @@
-import { Playlist } from '../types'
+import type { Playlist } from '../types'
 
 interface MigrationCardProps {
   selectedPlatform: string
