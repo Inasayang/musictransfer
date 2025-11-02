@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import AlertOverlay from './components/AlertOverlay'
 import AppHeader from './components/AppHeader'
-import AuthenticationCard, { AuthProviderConfig } from './components/AuthenticationCard'
+import AuthenticationCard from './components/AuthenticationCard'
 import Hero from './components/Hero'
 import MigrationCard from './components/MigrationCard'
 import ProgressCard from './components/ProgressCard'
-import { AlertState, AuthStatus, Playlist } from './types'
+import type { AuthProviderConfig } from './components/AuthenticationCard'
+import type { AlertState, AuthStatus, Playlist } from './types'
 
 const applyTheme = (theme: 'light' | 'dark') => {
   document.documentElement.classList.remove('light', 'dark')

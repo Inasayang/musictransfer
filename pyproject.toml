@@ -20,6 +20,8 @@ dependencies = [
     "jinja2>=3.1.2",
     "authlib>=1.2.1",
     "httpx>=0.25.0",
+    "google-api-python-client>=2.186.0",
+    "google-auth>=2.42.1",
 ]
 
 [project.urls]
